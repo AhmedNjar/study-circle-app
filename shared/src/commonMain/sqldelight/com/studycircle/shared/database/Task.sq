@@ -1,0 +1,42 @@
+-- TrackingMethod, TaskAudience and TaskMetadata are sealed/composite domain
+-- types with no natural flat-column shape. They're stored as JSON here
+-- (serialized via kotlinx.serialization on the way in/out) rather than
+-- normalized into more tables — a local cache doesn't need to query inside
+-- them, just round-trip them intact. activityType stays its own column
+-- because it's the one field task lists actually filter/sort by.
+CREATE TABLE Task (
+    id TEXT NOT NULL PRIMARY KEY,
+    circleId TEXT NOT NULL,
+    title TEXT NOT NULL,
+    dueDate TEXT NOT NULL,
+    createdBy TEXT NOT NULL,
+    activityType TEXT NOT NULL,
+    trackingJson TEXT NOT NULL,
+    audienceJson TEXT NOT NULL,
+    metadataJson TEXT NOT NULL
+);
+
+CREATE TABLE TaskGroupEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    taskId TEXT NOT NULL,
+    name TEXT,
+    memberIdsJson TEXT NOT NULL,
+    completionRule TEXT NOT NULL
+);
+
+selectTasksByCircle:
+SELECT * FROM Task WHERE circleId = ?;
+
+selectTaskById:
+SELECT * FROM Task WHERE id = ?;
+
+insertOrReplaceTask:
+INSERT OR REPLACE INTO Task(id, circleId, title, dueDate, createdBy, activityType, trackingJson, audienceJson, metadataJson)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectGroupsByTask:
+SELECT * FROM TaskGroupEntity WHERE taskId = ?;
+
+insertOrReplaceGroup:
+INSERT OR REPLACE INTO TaskGroupEntity(id, taskId, name, memberIdsJson, completionRule)
+VALUES (?, ?, ?, ?, ?);

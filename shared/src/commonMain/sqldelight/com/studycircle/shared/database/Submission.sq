@@ -1,0 +1,34 @@
+-- syncedRemotely is the offline-first hinge: a row is written here the
+-- instant a student submits (locally), with syncedRemotely = 0. A background
+-- worker uploads it and flips this to 1 once the server has it. The review
+-- queue's own remote GET is the true approval state; this flag only tracks
+-- whether *this device's copy* has left the device yet.
+CREATE TABLE SubmissionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    taskId TEXT NOT NULL,
+    submitterJson TEXT NOT NULL,
+    submittedAt TEXT NOT NULL,
+    status TEXT NOT NULL,
+    supervisorNote TEXT,
+    evidenceJson TEXT NOT NULL,
+    syncedRemotely INTEGER NOT NULL DEFAULT 0
+);
+
+selectByTask:
+SELECT * FROM SubmissionEntity WHERE taskId = ?;
+
+selectPendingSync:
+SELECT * FROM SubmissionEntity WHERE syncedRemotely = 0;
+
+insertOrReplace:
+INSERT OR REPLACE INTO SubmissionEntity(id, taskId, submitterJson, submittedAt, status, supervisorNote, evidenceJson, syncedRemotely)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+markSynced:
+UPDATE SubmissionEntity SET syncedRemotely = 1 WHERE id = ?;
+
+updateStatus:
+UPDATE SubmissionEntity SET status = ?, supervisorNote = ? WHERE id = ?;
+
+deleteById:
+DELETE FROM SubmissionEntity WHERE id = ?;

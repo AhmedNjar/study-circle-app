@@ -1,0 +1,30 @@
+CREATE TABLE CircleEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    joinCode TEXT NOT NULL,
+    supervisorId TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
+    isActive INTEGER NOT NULL
+);
+
+CREATE TABLE CircleMember (
+    circleId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    PRIMARY KEY (circleId, userId)
+);
+
+selectAllCircles:
+SELECT * FROM CircleEntity;
+
+selectCircleById:
+SELECT * FROM CircleEntity WHERE id = ?;
+
+insertOrReplaceCircle:
+INSERT OR REPLACE INTO CircleEntity(id, name, joinCode, supervisorId, createdAt, isActive)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectMembers:
+SELECT userId FROM CircleMember WHERE circleId = ?;
+
+insertMember:
+INSERT OR IGNORE INTO CircleMember(circleId, userId) VALUES (?, ?);

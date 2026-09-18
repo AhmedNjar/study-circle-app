@@ -1,0 +1,20 @@
+-- ownerKey is a flattened, indexable form of StreakOwner ("individual:<id>"
+-- or "group:<id>") so we can look a streak up without deserializing JSON;
+-- ownerJson keeps the full typed value for round-tripping to the domain model.
+CREATE TABLE StreakEntity (
+    circleId TEXT NOT NULL,
+    ownerKey TEXT NOT NULL,
+    ownerJson TEXT NOT NULL,
+    currentCount INTEGER NOT NULL,
+    bestCount INTEGER NOT NULL,
+    lastCompletedDate TEXT,
+    freezesAvailable INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (circleId, ownerKey)
+);
+
+selectByOwner:
+SELECT * FROM StreakEntity WHERE circleId = ? AND ownerKey = ?;
+
+insertOrReplace:
+INSERT OR REPLACE INTO StreakEntity(circleId, ownerKey, ownerJson, currentCount, bestCount, lastCompletedDate, freezesAvailable)
+VALUES (?, ?, ?, ?, ?, ?, ?);

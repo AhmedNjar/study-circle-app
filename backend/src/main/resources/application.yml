@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/study_circle
+    username: study_circle
+    password: change_me
+  jpa:
+    hibernate:
+      ddl-auto: update
+server:
+  port: 8080
+
+jwt:
+  # 32+ random bytes minimum for HS256 — this placeholder is NOT safe to ship;
+  # generate a real one (e.g. `openssl rand -base64 48`) and pass it via
+  # env var / secrets manager for anything beyond local dev.
+  secret: "CHANGE_ME_this_is_a_dev_only_placeholder_secret_value_1234567890"
+  expiration-minutes: 1440

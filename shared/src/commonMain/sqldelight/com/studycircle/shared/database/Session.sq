@@ -1,0 +1,21 @@
+-- Single-row table (id is always 0) — this device's one active login.
+-- Logging out is a DELETE, not a status flag, since there's nothing else
+-- worth keeping once the token is gone.
+CREATE TABLE SessionEntity (
+    id INTEGER NOT NULL PRIMARY KEY,
+    token TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    username TEXT NOT NULL,
+    displayName TEXT NOT NULL,
+    role TEXT NOT NULL
+);
+
+selectSession:
+SELECT * FROM SessionEntity LIMIT 1;
+
+insertOrReplace:
+INSERT OR REPLACE INTO SessionEntity(id, token, userId, username, displayName, role)
+VALUES (0, ?, ?, ?, ?, ?);
+
+clear:
+DELETE FROM SessionEntity;
