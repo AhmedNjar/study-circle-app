@@ -24,14 +24,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.studycircle.android.ui.components.PrimaryButton
-import com.studycircle.shared.features.circle.domain.model.CircleDetail
-import com.studycircle.shared.features.circle.domain.model.CircleMemberSummary
+import com.studycircle.android.ui.streak.StreakBadge
+import com.studycircle.android.ui.streak.StreakBadgeContent
 import com.studycircle.shared.features.circle.domain.usecase.GetCircleUseCase
-import kotlinx.datetime.Clock
 import com.studycircle.shared.features.circle.presentation.detail.CircleDetailIntent
 import com.studycircle.shared.features.circle.presentation.detail.CircleDetailViewModel
+import com.studycircle.shared.features.streak.presentation.badge.StreakBadgeState
 import com.studycircle.shared.localization.ArabicTerms
 import org.koin.compose.koinInject
+
+import androidx.compose.ui.tooling.preview.Preview
+import com.studycircle.shared.features.auth.domain.model.Role
+import com.studycircle.shared.features.circle.domain.model.CircleDetail
+import com.studycircle.shared.features.circle.domain.model.CircleMemberSummary
+import com.studycircle.shared.features.circle.presentation.detail.CircleDetailState
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Composable
 fun CircleDetailScreen(circleId: String, onViewTasks: () -> Unit) {
@@ -44,13 +52,17 @@ fun CircleDetailScreen(circleId: String, onViewTasks: () -> Unit) {
         viewModel.dispatch(CircleDetailIntent.Load(circleId))
     }
 
-    CircleDetailContent(state = state, onViewTasks = onViewTasks)
+    CircleDetailContent(
+        state = state,
+        onViewTasks = onViewTasks
+    )
 }
 
 @Composable
 fun CircleDetailContent(
-    state: com.studycircle.shared.features.circle.presentation.detail.CircleDetailState,
-    onViewTasks: () -> Unit
+    state: CircleDetailState,
+    onViewTasks: () -> Unit,
+    streakBadge: @Composable (String) -> Unit = { id -> StreakBadge(circleId = id) }
 ) {
     when {
         state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -65,6 +77,8 @@ fun CircleDetailContent(
                 Text(circle.name, style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(4.dp))
                 Text("رمز الانضمام: ${circle.joinCode}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                streakBadge(circle.id)
                 Spacer(Modifier.height(12.dp))
                 PrimaryButton(text = "عرض المهام", onClick = onViewTasks)
                 Spacer(Modifier.height(16.dp))
@@ -74,6 +88,8 @@ fun CircleDetailContent(
                     items(circle.members) { member ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(member.displayName)
+                            // Same ArabicTerms mapping layer from step 1 — role
+                            // labels never get hardcoded per-screen.
                             Text(ArabicTerms.roleLabel(member.role), style = MaterialTheme.typography.bodySmall)
                         }
                     }
@@ -83,26 +99,26 @@ fun CircleDetailContent(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun CircleDetailPreview() {
+fun CircleDetailContentPreview() {
+    val mockCircle = CircleDetail(
+        id = "1",
+        name = "حلقة تجريبية",
+        joinCode = "ABCDEF",
+        supervisorId = "u1",
+        members = listOf(
+            CircleMemberSummary("u1", "أحمد", Role.SUPERVISOR),
+            CircleMemberSummary("u2", "محمد", Role.STUDENT)
+        ),
+        createdAt = Clock.System.now(),
+        isActive = true
+    )
     MaterialTheme {
         CircleDetailContent(
-            state = com.studycircle.shared.features.circle.presentation.detail.CircleDetailState(
-                circle = CircleDetail(
-                    id = "1",
-                    name = "حلقة القرآن",
-                    joinCode = "ABC123",
-                    supervisorId = "sup1",
-                    members = listOf(
-                        CircleMemberSummary("1", "أحمد", com.studycircle.shared.features.auth.domain.model.Role.SUPERVISOR),
-                        CircleMemberSummary("2", "محمد", com.studycircle.shared.features.auth.domain.model.Role.STUDENT)
-                    ),
-                    createdAt = Clock.System.now(),
-                    isActive = true
-                )
-            ),
-            onViewTasks = {}
+            state = CircleDetailState(circle = mockCircle),
+            onViewTasks = {},
+            streakBadge = { StreakBadgeContent(state = StreakBadgeState(currentCount = 7)) }
         )
     }
 }

@@ -1,11 +1,15 @@
 package com.studycircle.shared.features.task.presentation.taskrunner
 
 import com.studycircle.shared.core.mvi.MviViewModel
+import com.studycircle.shared.features.auth.domain.repository.AuthRepository
 import com.studycircle.shared.features.task.domain.model.MediaType
 import com.studycircle.shared.features.task.domain.model.SubmissionEvidence
+import com.studycircle.shared.features.task.domain.model.TaskAudience
 import com.studycircle.shared.features.task.domain.model.TrackingMethod
 import com.studycircle.shared.features.task.domain.usecase.EvidenceValidationResult
+import com.studycircle.shared.features.task.domain.usecase.FormOrJoinTaskGroupUseCase
 import com.studycircle.shared.features.task.domain.usecase.GetTaskUseCase
+import com.studycircle.shared.features.task.domain.usecase.ListTaskGroupsUseCase
 import com.studycircle.shared.features.task.domain.usecase.SubmitEvidenceUseCase
 import com.studycircle.shared.features.task.domain.usecase.ValidateEvidenceUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -13,6 +17,9 @@ import kotlinx.coroutines.CoroutineScope
 class TaskRunnerViewModel(
     private val getTaskUseCase: GetTaskUseCase,
     private val submitEvidenceUseCase: SubmitEvidenceUseCase,
+    private val listTaskGroupsUseCase: ListTaskGroupsUseCase,
+    private val formOrJoinTaskGroupUseCase: FormOrJoinTaskGroupUseCase,
+    private val authRepository: AuthRepository,
     scope: CoroutineScope
 ) : MviViewModel<TaskRunnerIntent, TaskRunnerState, TaskRunnerEffect>(TaskRunnerState(), scope) {
 
@@ -36,6 +43,9 @@ class TaskRunnerViewModel(
             is TaskRunnerIntent.RecordingFinished ->
                 setState { copy(recordingState = RecordingState.Recorded(intent.localPath, intent.durationSeconds)) }
             TaskRunnerIntent.DiscardRecording -> setState { copy(recordingState = RecordingState.Idle) }
+            is TaskRunnerIntent.NewGroupNameChanged -> setState { copy(newGroupName = intent.value, errorMessage = null) }
+            TaskRunnerIntent.CreateGroup -> createGroup()
+            is TaskRunnerIntent.JoinGroup -> joinGroup(intent.groupId)
             TaskRunnerIntent.Submit -> submit()
         }
     }
@@ -43,13 +53,48 @@ class TaskRunnerViewModel(
     private suspend fun load(taskId: String) {
         setState { copy(isLoading = true, errorMessage = null) }
         getTaskUseCase(taskId).fold(
-            onSuccess = { task -> setState { copy(isLoading = false, task = task) } },
+            onSuccess = { task ->
+                if (task == null) {
+                    setState { copy(isLoading = false, errorMessage = "المهمة غير موجودة") }
+                } else {
+                    setState { copy(isLoading = false, task = task) }
+                    if (task.audience is TaskAudience.Groups) loadGroupContext(taskId)
+                }
+            },
             onFailure = { setState { copy(isLoading = false, errorMessage = "تعذر تحميل المهمة") } }
+        )
+    }
+
+    private suspend fun loadGroupContext(taskId: String) {
+        val userId = authRepository.currentSession()?.userId ?: return
+        listTaskGroupsUseCase(taskId).onSuccess { groups ->
+            val mine = groups.find { userId in it.memberIds }
+            setState { copy(availableGroups = groups, myGroup = mine) }
+        }
+    }
+
+    private suspend fun createGroup() {
+        val task = currentState.task ?: return
+        formOrJoinTaskGroupUseCase(task.id, groupId = null, name = currentState.newGroupName.ifBlank { null }).fold(
+            onSuccess = { group -> setState { copy(myGroup = group, availableGroups = availableGroups + group, newGroupName = "") } },
+            onFailure = { setState { copy(errorMessage = "تعذر إنشاء المجموعة") } }
+        )
+    }
+
+    private suspend fun joinGroup(groupId: String) {
+        val task = currentState.task ?: return
+        formOrJoinTaskGroupUseCase(task.id, groupId = groupId, name = null).fold(
+            onSuccess = { group -> setState { copy(myGroup = group) } },
+            onFailure = { setState { copy(errorMessage = "تعذر الانضمام إلى المجموعة") } }
         )
     }
 
     private suspend fun submit() {
         val task = currentState.task ?: return
+        if (task.audience is TaskAudience.Groups && currentState.myGroup == null) {
+            setState { copy(errorMessage = "انضم إلى مجموعة أولاً") }
+            return
+        }
         val evidence = buildEvidence() ?: return
 
         // Client-side check first (instant feedback); the server enforces
@@ -61,7 +106,7 @@ class TaskRunnerViewModel(
         }
 
         setState { copy(isSubmitting = true, errorMessage = null) }
-        submitEvidenceUseCase(task.id, evidence).fold(
+        submitEvidenceUseCase(task.id, evidence, currentState.myGroup?.id).fold(
             onSuccess = {
                 setState { copy(isSubmitting = false) }
                 emitEffect(TaskRunnerEffect.Submitted)

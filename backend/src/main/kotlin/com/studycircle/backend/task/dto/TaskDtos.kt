@@ -34,7 +34,8 @@ sealed class TrackingMethodDto {
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = TaskAudienceDto.AllMembers::class, name = "ALL_MEMBERS"),
-    JsonSubTypes.Type(value = TaskAudienceDto.IndividualMembers::class, name = "INDIVIDUAL_MEMBERS")
+    JsonSubTypes.Type(value = TaskAudienceDto.IndividualMembers::class, name = "INDIVIDUAL_MEMBERS"),
+    JsonSubTypes.Type(value = TaskAudienceDto.Groups::class, name = "GROUPS")
 )
 sealed class TaskAudienceDto {
     abstract val type: String
@@ -43,6 +44,15 @@ sealed class TaskAudienceDto {
     data class IndividualMembers(
         override val type: String = "INDIVIDUAL_MEMBERS",
         val memberIds: List<String>
+    ) : TaskAudienceDto()
+
+    // groupIds is never trusted from the client — at task-creation time no
+    // groups exist yet (they form afterward via TaskGroupController), so
+    // this is always [] on the way in. TaskService.toResponse() overwrites
+    // it with a live query on the way out, so it's never stale.
+    data class Groups(
+        override val type: String = "GROUPS",
+        val groupIds: List<String> = emptyList()
     ) : TaskAudienceDto()
 }
 

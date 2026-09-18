@@ -21,6 +21,7 @@ class TaskService(
     private val taskRepository: TaskRepository,
     private val circleRepository: CircleRepository,
     private val memberRepository: CircleMemberRepository,
+    private val taskGroupRepository: TaskGroupRepository,
     private val objectMapper: ObjectMapper
 ) {
     fun create(circleId: String, request: CreateTaskRequest, supervisorId: String): TaskResponse {
@@ -58,11 +59,24 @@ class TaskService(
     internal fun trackingOf(task: TaskEntity): TrackingMethodDto =
         objectMapper.readValue(task.trackingJson, TrackingMethodDto::class.java)
 
+    internal fun audienceOf(task: TaskEntity): TaskAudienceDto =
+        objectMapper.readValue(task.audienceJson, TaskAudienceDto::class.java)
+
     private fun TaskEntity.toResponse() = TaskResponse(
         id = id, circleId = circleId, title = title, dueDate = dueDate.toString(),
         createdBy = createdBy, activityType = activityType,
         tracking = objectMapper.readValue(trackingJson, TrackingMethodDto::class.java),
-        audience = objectMapper.readValue(audienceJson, TaskAudienceDto::class.java),
+        // GROUPS audience is resolved live from TaskGroupRepository rather than
+        // trusting whatever groupIds happened to be stored at creation time —
+        // groups form well after the task does, so a stored list would just
+        // go stale the moment the first group forms.
+        audience = audienceOf(this).let { audience ->
+            if (audience is TaskAudienceDto.Groups) {
+                TaskAudienceDto.Groups(groupIds = taskGroupRepository.findByTaskId(id).map { it.id })
+            } else {
+                audience
+            }
+        },
         metadata = objectMapper.readValue(metadataJson, TaskMetadataDto::class.java)
     )
 }

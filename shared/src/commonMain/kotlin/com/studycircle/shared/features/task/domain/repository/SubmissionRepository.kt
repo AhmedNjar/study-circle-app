@@ -5,7 +5,10 @@ import com.studycircle.shared.features.task.domain.model.SubmissionEvidence
 import com.studycircle.shared.features.task.domain.model.SubmissionStatus
 
 interface SubmissionRepository {
-    suspend fun submit(taskId: String, evidence: SubmissionEvidence): Result<Submission>
+    // groupId null = SubmitterRef.Individual; set = SubmitterRef.OnBehalfOfGroup.
+    // The caller (TaskRunnerViewModel) already knows which group, if any, the
+    // current user is part of for this specific task.
+    suspend fun submit(taskId: String, evidence: SubmissionEvidence, groupId: String? = null): Result<Submission>
     suspend fun listByTask(taskId: String, status: SubmissionStatus? = null): Result<List<Submission>>
     suspend fun review(submissionId: String, status: SubmissionStatus, note: String?): Result<Submission>
 

@@ -5,12 +5,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = SubmitterRefDto.Individual::class, name = "INDIVIDUAL")
-    // Phase 4 adds SubmitterRefDto.OnBehalfOfGroup here, name = "GROUP"
+    JsonSubTypes.Type(value = SubmitterRefDto.Individual::class, name = "INDIVIDUAL"),
+    JsonSubTypes.Type(value = SubmitterRefDto.OnBehalfOfGroup::class, name = "GROUP")
 )
 sealed class SubmitterRefDto {
     abstract val type: String
     data class Individual(override val type: String = "INDIVIDUAL", val userId: String) : SubmitterRefDto()
+    data class OnBehalfOfGroup(
+        override val type: String = "GROUP",
+        val groupId: String,
+        val submittedByUserId: String
+    ) : SubmitterRefDto()
 }
 
 // Discriminator values deliberately match TrackingMethodDto's, one-to-one —

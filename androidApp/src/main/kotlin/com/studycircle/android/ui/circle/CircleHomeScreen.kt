@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.studycircle.android.ui.components.PrimaryButton
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.tooling.preview.Preview
 
 // Placeholder landing screen for Phase 1 — becomes the real circle list once
 // tasks exist to show on it (Phase 2). Both actions show regardless of role
@@ -36,9 +38,9 @@ fun CircleHomeContent(onCreateCircle: () -> Unit, onJoinCircle: () -> Unit) {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun CircleHomePreview() {
+fun CircleHomeContentPreview() {
     MaterialTheme {
         CircleHomeContent(onCreateCircle = {}, onJoinCircle = {})
     }

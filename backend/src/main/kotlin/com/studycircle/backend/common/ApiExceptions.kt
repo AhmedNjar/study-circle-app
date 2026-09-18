@@ -41,7 +41,19 @@ class EvidenceTypeMismatchException :
     ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "EVIDENCE_TYPE_MISMATCH", "The submitted evidence doesn't match this task's tracking method")
 
 class UnsupportedSubmitterException :
-    ApiException(HttpStatus.BAD_REQUEST, "GROUP_SUBMISSIONS_NOT_SUPPORTED", "Group submissions aren't supported yet")
+    ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_SUBMITTER", "Unrecognized submitter type")
 
 class SubmitterMismatchException :
     ApiException(HttpStatus.FORBIDDEN, "SUBMITTER_MISMATCH", "You can only submit on your own behalf")
+
+class TaskGroupNotFoundException :
+    ApiException(HttpStatus.NOT_FOUND, "TASK_GROUP_NOT_FOUND", "No group matches that id for this task")
+
+class AlreadyInTaskGroupException :
+    ApiException(HttpStatus.CONFLICT, "ALREADY_IN_TASK_GROUP", "You're already in a group for this task")
+
+class NotGroupMemberException :
+    ApiException(HttpStatus.FORBIDDEN, "NOT_GROUP_MEMBER", "You're not a member of this group")
+
+class TaskNotGroupTaskException :
+    ApiException(HttpStatus.BAD_REQUEST, "TASK_NOT_GROUP_TASK", "This task isn't set up for group participation")

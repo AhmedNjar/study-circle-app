@@ -26,6 +26,9 @@ import com.studycircle.shared.features.circle.presentation.create.CreateCircleVi
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.compose.koinInject
 
+import androidx.compose.ui.tooling.preview.Preview
+import com.studycircle.shared.features.circle.presentation.create.CreateCircleState
+
 @Composable
 fun CreateCircleScreen(onCreated: (circleId: String) -> Unit) {
     val useCase: CreateCircleUseCase = koinInject()
@@ -43,23 +46,21 @@ fun CreateCircleScreen(onCreated: (circleId: String) -> Unit) {
 
     CreateCircleContent(
         state = state,
-        onNameChanged = { viewModel.dispatch(CreateCircleIntent.NameChanged(it)) },
-        onSubmit = { viewModel.dispatch(CreateCircleIntent.Submit) }
+        onIntent = { viewModel.dispatch(it) }
     )
 }
 
 @Composable
 fun CreateCircleContent(
-    state: com.studycircle.shared.features.circle.presentation.create.CreateCircleState,
-    onNameChanged: (String) -> Unit,
-    onSubmit: () -> Unit
+    state: CreateCircleState,
+    onIntent: (CreateCircleIntent) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Text("إنشاء حلقة جديدة", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
             value = state.name,
-            onValueChange = onNameChanged,
+            onValueChange = { onIntent(CreateCircleIntent.NameChanged(it)) },
             label = { Text("اسم الحلقة") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -70,20 +71,17 @@ fun CreateCircleContent(
         }
         Spacer(Modifier.height(16.dp))
         if (state.isLoading) CircularProgressIndicator()
-        else PrimaryButton(text = "إنشاء", onClick = onSubmit)
+        else PrimaryButton(text = "إنشاء", onClick = { onIntent(CreateCircleIntent.Submit) })
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun CreateCirclePreview() {
+fun CreateCircleContentPreview() {
     MaterialTheme {
         CreateCircleContent(
-            state = com.studycircle.shared.features.circle.presentation.create.CreateCircleState(
-                name = "حلقة جديدة"
-            ),
-            onNameChanged = {},
-            onSubmit = {}
+            state = CreateCircleState(),
+            onIntent = {}
         )
     }
 }

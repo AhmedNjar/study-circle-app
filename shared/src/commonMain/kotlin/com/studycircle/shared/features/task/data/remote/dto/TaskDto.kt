@@ -26,6 +26,10 @@ sealed class TaskAudienceDto {
     @Serializable
     @SerialName("INDIVIDUAL_MEMBERS")
     data class IndividualMembers(val memberIds: List<String>) : TaskAudienceDto()
+
+    @Serializable
+    @SerialName("GROUPS")
+    data class Groups(val groupIds: List<String> = emptyList()) : TaskAudienceDto()
 }
 
 @Serializable

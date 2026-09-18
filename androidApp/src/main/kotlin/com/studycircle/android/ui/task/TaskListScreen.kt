@@ -26,16 +26,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.studycircle.shared.features.task.domain.usecase.ListTasksUseCase
+import com.studycircle.android.ui.streak.StreakBadge
+import com.studycircle.android.ui.streak.StreakBadgeContent
+import com.studycircle.shared.features.streak.presentation.badge.StreakBadgeState
 import com.studycircle.shared.features.task.domain.model.ActivityType
 import com.studycircle.shared.features.task.domain.model.CircleTask
 import com.studycircle.shared.features.task.domain.model.MediaType
 import com.studycircle.shared.features.task.domain.model.TaskAudience
 import com.studycircle.shared.features.task.domain.model.TrackingMethod
-import kotlinx.datetime.LocalDate
+import com.studycircle.shared.features.task.domain.usecase.ListTasksUseCase
 import com.studycircle.shared.features.task.presentation.tasklist.TaskListIntent
+import com.studycircle.shared.features.task.presentation.tasklist.TaskListState
 import com.studycircle.shared.features.task.presentation.tasklist.TaskListViewModel
 import com.studycircle.shared.localization.ArabicTerms
+import kotlinx.datetime.LocalDate
 import org.koin.compose.koinInject
 
 @Composable
@@ -53,6 +57,7 @@ fun TaskListScreen(
     LaunchedEffect(circleId) { viewModel.dispatch(TaskListIntent.Load(circleId)) }
 
     TaskListContent(
+        circleId = circleId,
         state = state,
         onCreateTask = onCreateTask,
         onOpenTask = onOpenTask,
@@ -62,42 +67,52 @@ fun TaskListScreen(
 
 @Composable
 fun TaskListContent(
-    state: com.studycircle.shared.features.task.presentation.tasklist.TaskListState,
+    circleId: String,
+    state: TaskListState,
     onCreateTask: () -> Unit,
     onOpenTask: (taskId: String) -> Unit,
-    onReviewTask: (taskId: String) -> Unit
+    onReviewTask: (taskId: String) -> Unit,
+    streakBadge: @Composable () -> Unit = { StreakBadge(circleId = circleId) }
 ) {
     Scaffold(
         floatingActionButton = {
+            // Shown regardless of role — same Phase 1 simplification as
+            // CircleHomeScreen's two buttons. The backend's @PreAuthorize on
+            // POST /tasks is what actually enforces SUPERVISOR-only creation.
             FloatingActionButton(onClick = onCreateTask) { Text("+") }
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                state.tasks.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("لا توجد مهام بعد", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(state.tasks) { task ->
-                        Card {
-                            Column(Modifier.padding(16.dp)) {
-                                Text(task.title, style = MaterialTheme.typography.titleMedium)
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    "${ArabicTerms.activityTypeLabel(task.activityType)} · ${task.dueDate}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    TextButton(onClick = { onOpenTask(task.id) }) { Text("ابدأ") }
-                                    TextButton(onClick = { onReviewTask(task.id) }) { Text("مراجعة") }
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            Box(Modifier.padding(16.dp)) {
+                streakBadge()
+            }
+            Box(Modifier.weight(1f)) {
+                when {
+                    state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                    state.tasks.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("لا توجد مهام بعد", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(state.tasks) { task ->
+                            Card {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(task.title, style = MaterialTheme.typography.titleMedium)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "${ArabicTerms.activityTypeLabel(task.activityType)} · ${task.dueDate}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        TextButton(onClick = { onOpenTask(task.id) }) { Text("ابدأ") }
+                                        TextButton(onClick = { onReviewTask(task.id) }) { Text("مراجعة") }
+                                    }
                                 }
                             }
                         }
@@ -108,12 +123,14 @@ fun TaskListContent(
     }
 }
 
+
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)
 @Composable
 private fun TaskListPreview() {
     MaterialTheme {
         TaskListContent(
-            state = com.studycircle.shared.features.task.presentation.tasklist.TaskListState(
+            circleId = "c1",
+            state = TaskListState(
                 tasks = listOf(
                     CircleTask(
                         id = "1",
@@ -139,7 +156,10 @@ private fun TaskListPreview() {
             ),
             onCreateTask = {},
             onOpenTask = {},
-            onReviewTask = {}
+            onReviewTask = {},
+            streakBadge = {
+                StreakBadgeContent(state = StreakBadgeState(currentCount = 5))
+            }
         )
     }
 }

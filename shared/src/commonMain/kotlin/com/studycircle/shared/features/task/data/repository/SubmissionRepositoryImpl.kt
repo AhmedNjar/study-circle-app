@@ -32,12 +32,17 @@ class SubmissionRepositoryImpl(
     private val queries = database.submissionQueries
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun submit(taskId: String, evidence: SubmissionEvidence): Result<Submission> {
+    override suspend fun submit(taskId: String, evidence: SubmissionEvidence, groupId: String?): Result<Submission> {
         val userId = currentUserId() ?: return Result.failure(IllegalStateException("No active session"))
+        val submitter = if (groupId != null) {
+            SubmitterRef.OnBehalfOfGroup(groupId = groupId, submittedByUserId = userId)
+        } else {
+            SubmitterRef.Individual(userId)
+        }
         val submission = Submission(
             id = Uuid.random().toString(),
             taskId = taskId,
-            submitter = SubmitterRef.Individual(userId),
+            submitter = submitter,
             submittedAt = Clock.System.now(),
             status = SubmissionStatus.PENDING,
             supervisorNote = null,

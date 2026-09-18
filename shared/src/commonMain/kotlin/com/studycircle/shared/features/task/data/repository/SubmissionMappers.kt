@@ -12,11 +12,12 @@ import kotlinx.datetime.Instant
 
 internal fun SubmitterRef.toDto(): SubmitterRefDto = when (this) {
     is SubmitterRef.Individual -> SubmitterRefDto.Individual(userId)
-    is SubmitterRef.OnBehalfOfGroup -> error("Group submissions aren't wired up until Phase 4")
+    is SubmitterRef.OnBehalfOfGroup -> SubmitterRefDto.OnBehalfOfGroup(groupId, submittedByUserId)
 }
 
 internal fun SubmitterRefDto.toDomain(): SubmitterRef = when (this) {
     is SubmitterRefDto.Individual -> SubmitterRef.Individual(userId)
+    is SubmitterRefDto.OnBehalfOfGroup -> SubmitterRef.OnBehalfOfGroup(groupId, submittedByUserId)
 }
 
 internal fun SubmissionEvidence.toDto(): SubmissionEvidenceDto = when (this) {

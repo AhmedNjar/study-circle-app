@@ -33,6 +33,9 @@ import com.studycircle.shared.features.auth.presentation.login.LoginViewModel
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.compose.koinInject
 
+import androidx.compose.ui.tooling.preview.Preview
+import com.studycircle.shared.features.auth.presentation.login.LoginState
+
 // LoginViewModel isn't Koin-scoped to this composable's lifecycle — it's
 // built with rememberCoroutineScope() rather than a real viewModelScope.
 // That's fine for Phase 1 (screen-local, simple flows); bridging MviViewModel
@@ -55,19 +58,15 @@ fun LoginScreen(onLoggedIn: () -> Unit, onGoToRegister: () -> Unit) {
 
     LoginContent(
         state = state,
-        onUsernameChanged = { viewModel.dispatch(LoginIntent.UsernameChanged(it)) },
-        onPasswordChanged = { viewModel.dispatch(LoginIntent.PasswordChanged(it)) },
-        onSubmit = { viewModel.dispatch(LoginIntent.Submit) },
+        onIntent = { viewModel.dispatch(it) },
         onGoToRegister = onGoToRegister
     )
 }
 
 @Composable
 fun LoginContent(
-    state: com.studycircle.shared.features.auth.presentation.login.LoginState,
-    onUsernameChanged: (String) -> Unit,
-    onPasswordChanged: (String) -> Unit,
-    onSubmit: () -> Unit,
+    state: LoginState,
+    onIntent: (LoginIntent) -> Unit,
     onGoToRegister: () -> Unit
 ) {
     Column(
@@ -81,7 +80,7 @@ fun LoginContent(
 
         OutlinedTextField(
             value = state.username,
-            onValueChange = onUsernameChanged,
+            onValueChange = { onIntent(LoginIntent.UsernameChanged(it)) },
             label = { Text("اسم المستخدم") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -89,7 +88,7 @@ fun LoginContent(
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = state.password,
-            onValueChange = onPasswordChanged,
+            onValueChange = { onIntent(LoginIntent.PasswordChanged(it)) },
             label = { Text("كلمة المرور") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
@@ -105,7 +104,7 @@ fun LoginContent(
         if (state.isLoading) {
             CircularProgressIndicator()
         } else {
-            PrimaryButton(text = "تسجيل الدخول", onClick = onSubmit)
+            PrimaryButton(text = "تسجيل الدخول", onClick = { onIntent(LoginIntent.Submit) })
         }
 
         Spacer(Modifier.height(16.dp))
@@ -120,18 +119,13 @@ fun LoginContent(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun LoginPreview() {
+fun LoginContentPreview() {
     MaterialTheme {
         LoginContent(
-            state = com.studycircle.shared.features.auth.presentation.login.LoginState(
-                username = "user123",
-                password = "password"
-            ),
-            onUsernameChanged = {},
-            onPasswordChanged = {},
-            onSubmit = {},
+            state = LoginState(),
+            onIntent = {},
             onGoToRegister = {}
         )
     }

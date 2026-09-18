@@ -26,6 +26,9 @@ import com.studycircle.shared.features.circle.presentation.join.JoinCircleViewMo
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.compose.koinInject
 
+import androidx.compose.ui.tooling.preview.Preview
+import com.studycircle.shared.features.circle.presentation.join.JoinCircleState
+
 @Composable
 fun JoinCircleScreen(onJoined: (circleId: String) -> Unit) {
     val useCase: JoinCircleUseCase = koinInject()
@@ -43,23 +46,21 @@ fun JoinCircleScreen(onJoined: (circleId: String) -> Unit) {
 
     JoinCircleContent(
         state = state,
-        onCodeChanged = { viewModel.dispatch(JoinCircleIntent.CodeChanged(it)) },
-        onSubmit = { viewModel.dispatch(JoinCircleIntent.Submit) }
+        onIntent = { viewModel.dispatch(it) }
     )
 }
 
 @Composable
 fun JoinCircleContent(
-    state: com.studycircle.shared.features.circle.presentation.join.JoinCircleState,
-    onCodeChanged: (String) -> Unit,
-    onSubmit: () -> Unit
+    state: JoinCircleState,
+    onIntent: (JoinCircleIntent) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Text("الانضمام إلى حلقة", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
             value = state.code,
-            onValueChange = onCodeChanged,
+            onValueChange = { onIntent(JoinCircleIntent.CodeChanged(it)) },
             label = { Text("رمز الحلقة") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -70,20 +71,17 @@ fun JoinCircleContent(
         }
         Spacer(Modifier.height(16.dp))
         if (state.isLoading) CircularProgressIndicator()
-        else PrimaryButton(text = "انضمام", onClick = onSubmit)
+        else PrimaryButton(text = "انضمام", onClick = { onIntent(JoinCircleIntent.Submit) })
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun JoinCirclePreview() {
+fun JoinCircleContentPreview() {
     MaterialTheme {
         JoinCircleContent(
-            state = com.studycircle.shared.features.circle.presentation.join.JoinCircleState(
-                code = "ABC123"
-            ),
-            onCodeChanged = {},
-            onSubmit = {}
+            state = JoinCircleState(),
+            onIntent = {}
         )
     }
 }

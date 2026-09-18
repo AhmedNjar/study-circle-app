@@ -4,6 +4,7 @@ import com.studycircle.shared.core.mvi.MviEffect
 import com.studycircle.shared.core.mvi.MviIntent
 import com.studycircle.shared.core.mvi.MviState
 import com.studycircle.shared.features.task.domain.model.CircleTask
+import com.studycircle.shared.features.task.domain.model.TaskGroup
 
 sealed interface TaskRunnerIntent : MviIntent {
     data class Load(val taskId: String) : TaskRunnerIntent
@@ -19,6 +20,12 @@ sealed interface TaskRunnerIntent : MviIntent {
     data object StartRecording : TaskRunnerIntent
     data class RecordingFinished(val localPath: String, val durationSeconds: Int) : TaskRunnerIntent
     data object DiscardRecording : TaskRunnerIntent
+
+    // Group flow (only relevant when task.audience is TaskAudience.Groups) —
+    // shown *before* the timer/recorder UI until the student has a group.
+    data class NewGroupNameChanged(val value: String) : TaskRunnerIntent
+    data object CreateGroup : TaskRunnerIntent
+    data class JoinGroup(val groupId: String) : TaskRunnerIntent
 
     data object Submit : TaskRunnerIntent
 }
@@ -41,6 +48,12 @@ data class TaskRunnerState(
 
     // MediaSubmission state
     val recordingState: RecordingState = RecordingState.Idle,
+
+    // Group state — myGroup null + task.audience is Groups means "show the
+    // join/create UI instead of the timer/recorder".
+    val availableGroups: List<TaskGroup> = emptyList(),
+    val myGroup: TaskGroup? = null,
+    val newGroupName: String = "",
 
     val isSubmitting: Boolean = false
 ) : MviState

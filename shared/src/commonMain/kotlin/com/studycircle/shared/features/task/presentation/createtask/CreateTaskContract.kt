@@ -10,6 +10,12 @@ import com.studycircle.shared.features.task.domain.model.ActivityType
 // once Phase 5 adds watching/workout activities to the picker.
 enum class TrackingChoice { TIMED_WITH_REFLECTION, MEDIA_SUBMISSION }
 
+// Individual-member targeting works end to end in the domain/data/backend
+// layers (TaskAudience.IndividualMembers) but still has no picker here —
+// same Phase 2 UI-scope note as before, just narrowed further now that
+// Groups is the other real choice.
+enum class AudienceChoice { ALL_MEMBERS, GROUPS }
+
 sealed interface CreateTaskIntent : MviIntent {
     data class TitleChanged(val value: String) : CreateTaskIntent
     data class DueDateChanged(val value: String) : CreateTaskIntent
@@ -17,6 +23,7 @@ sealed interface CreateTaskIntent : MviIntent {
     data class TrackingChoiceChanged(val value: TrackingChoice) : CreateTaskIntent
     data class MinDurationMinutesChanged(val value: String) : CreateTaskIntent
     data class ReflectionMinLengthChanged(val value: String) : CreateTaskIntent
+    data class AudienceChoiceChanged(val value: AudienceChoice) : CreateTaskIntent
     data object Submit : CreateTaskIntent
 }
 
@@ -27,6 +34,7 @@ data class CreateTaskState(
     val trackingChoice: TrackingChoice = TrackingChoice.TIMED_WITH_REFLECTION,
     val minDurationMinutes: String = "15",
     val reflectionMinLength: String = "40",
+    val audienceChoice: AudienceChoice = AudienceChoice.ALL_MEMBERS,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 ) : MviState

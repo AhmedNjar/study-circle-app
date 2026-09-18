@@ -28,6 +28,7 @@ class CreateTaskViewModel(
             is CreateTaskIntent.TrackingChoiceChanged -> setState { copy(trackingChoice = intent.value) }
             is CreateTaskIntent.MinDurationMinutesChanged -> setState { copy(minDurationMinutes = intent.value) }
             is CreateTaskIntent.ReflectionMinLengthChanged -> setState { copy(reflectionMinLength = intent.value) }
+            is CreateTaskIntent.AudienceChoiceChanged -> setState { copy(audienceChoice = intent.value) }
             CreateTaskIntent.Submit -> submit()
         }
     }
@@ -58,9 +59,15 @@ class CreateTaskViewModel(
         }
 
         setState { copy(isLoading = true, errorMessage = null) }
+        val audience = when (s.audienceChoice) {
+            AudienceChoice.ALL_MEMBERS -> TaskAudience.AllMembers
+            // groupIds starts empty — groups form after the task exists, via
+            // TaskGroupController, not at creation time. See TaskAudienceDto.Groups.
+            AudienceChoice.GROUPS -> TaskAudience.Groups(groupIds = emptyList())
+        }
         val input = NewTaskInput(
             title = s.title, dueDate = dueDate, activityType = s.activityType,
-            tracking = tracking, audience = TaskAudience.AllMembers
+            tracking = tracking, audience = audience
         )
         createTaskUseCase(circleId, input).fold(
             onSuccess = { task ->

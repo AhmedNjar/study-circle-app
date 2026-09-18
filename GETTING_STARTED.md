@@ -1,31 +1,30 @@
-# المحفِظ والمُتعلِّم — Phase 0 + 1 + 2 scaffold
+# المحفِظ والمُتعلِّم — Phase 0 + 1 + 2 + 3 + 4 scaffold
 
-Foundation, auth + circle, and now the core task lifecycle: a supervisor can create a task (timed-reading or audio-recitation), a student can complete it — offline, if needed — and a supervisor can review and approve/reject it.
+Foundation, auth + circle, the task lifecycle, streak calculation, and now group tasks: a supervisor can create a "Groups" task, students form or join a group, each member submits their own evidence, and once the group's completion rule is satisfied the whole group's collective الرِّباط advances.
 
 ## Important caveat
-Still written in a sandbox with no Maven Central / Google Maven access, so **I could not run `./gradlew build`**. Run it locally first; I'm glad to fix whatever surfaces. Phase 2 adds more surface area than Phase 1 did (Jackson polymorphic DTOs on the backend, kotlinx.serialization sealed classes on the client, an offline-sync repository, Android's MediaRecorder) — treat this pass as the most likely to need a correction or two.
+Still a sandbox, still no `./gradlew build` run here. Phase 4 touches the most existing files of any phase so far (every sealed-class "Phase 4 adds X here" comment scattered through Phases 0–3 finally got filled in) — worth a careful first local build.
 
 ## Prerequisites
-Same as before (JDK 17, Android Studio, Postgres locally) — nothing new except a device/emulator with a microphone if you want to exercise the recitation flow.
+Unchanged.
 
 ## Running each piece
-- **Backend**: same as Phase 1, plus now:
-  - `POST /api/v1/circles/{circleId}/tasks` — create a task (SUPERVISOR)
-  - `GET /api/v1/circles/{circleId}/tasks` — list them
-  - `POST /api/v1/tasks/{taskId}/submissions` — submit evidence (STUDENT)
-  - `PATCH /api/v1/submissions/{submissionId}` — approve/reject (SUPERVISOR)
-  - `POST /api/v1/media/upload-url` + `PUT` the returned URL — local-disk-backed for now (writes to a temp dir), shaped exactly like a real pre-signed-URL flow so swapping in S3/GCS later only touches `MediaController.kt`
-- **Android app**: Circle Detail now has a "عرض المهام" button leading to the task list, "+" creates a task, tapping a task opens the taskrunner (timer+reflection or audio recorder, depending on the task), "مراجعة" opens the review queue.
-- **Unit tests**: `cd shared && ../gradlew test` runs `ValidateEvidenceUseCaseTest` — the anti-idle-cheating rule, tested without any Android/Spring dependency at all.
+- **Backend**, new endpoints:
+  - `POST /api/v1/tasks/{taskId}/groups` — create (`{"name": "..."}`) or join (`{"groupId": "..."}`) a group (STUDENT)
+  - `GET /api/v1/tasks/{taskId}/groups` — list groups formed for a task
+  - Submitting evidence now accepts `"submitter": {"type": "GROUP", "groupId": "...", "submittedByUserId": "..."}` alongside the existing `"INDIVIDUAL"` shape
+  - A task's `GET` response now resolves `audience.groupIds` live from the database rather than trusting whatever was stored at creation — see the comment in `TaskService.kt`
+- **Android app**: Create Task now has an "المشاركون" (participants) picker — الكل vs. مجموعات. Opening a group task in the taskrunner shows a join/create step first; once in a group, the screen shows the group's own الرِّباط badge alongside the usual timer/recorder. The review queue now shows who (or which group + member) each submission came from.
 
 ## What's deliberately still missing (by design, not oversight)
-- **Phase 1's gaps still apply** (no real circle list, no role-aware nav, no token refresh, no iOS shell) — see the Phase 1 notes below, unchanged.
-- **Groups and extra activity types** — exactly as planned: `TaskAudience.Groups`, `TrackingMethod.CountBased`, and `ManualCheckIn` all exist in the domain model but nothing in Phase 2 constructs them. That's Phase 4/5.
-- **The "sync worker" is manual, not a real background job.** `SubmissionRepository.syncPending()` exists and works, but nothing calls it automatically yet (no WorkManager, no BGTaskScheduler). Wiring it to app-resume or a periodic job is a real Phase 2 polish item — the offline-first *write path* (submit locally first, sync best-effort, retry later) is real and complete; the *trigger* for retrying is not yet automatic.
-- **`PlatformFileReader`'s iOS actual is unverified** — it's a best-effort NSData/Kotlin-Native interop implementation with no iOS app shell to run it against. Flagged in its own file comment; sanity-check it first when iOS work starts.
-- **Create Task UI is a flat form, not the multi-step wizard** sketched in the UI/UX discussion — and it only targets `TaskAudience.AllMembers`, even though `IndividualMembers` works end-to-end in the domain/data/backend layers already. Both are UI scope lines, not architecture gaps.
-- **Streak calculation** — `Submission` approval doesn't touch a streak yet; that's Phase 3, and `SubmissionService.review()` has a `// TODO Phase 3` marking exactly where it plugs in.
+- **All earlier phases' gaps still apply** (role-aware nav, token refresh, manual sync trigger, iOS shell, UTC-only streak day boundaries, etc.) — unchanged.
+- **Every group defaults to `ALL_MUST_SUBMIT`.** A supervisor can choose Groups as the audience, but not yet choose the completion rule per task — `TaskGroupService.formOrJoin()` hardcodes it. Letting the supervisor pick `ANY_SUFFICES` at task-creation time is a real next step, not a redesign — the domain model, backend enum, and streak-completion logic already handle both rules correctly, there's just no UI to select the other one yet.
+- **No circle-membership re-check on group join.** `TaskGroupService.formOrJoin()` verifies the task is actually a Groups-audience task, but doesn't re-verify the joining student is a member of the task's circle. In practice they'd need to already know the task id (gated behind `GET /circles/{id}/tasks`, which does check membership) — not airtight, but consistent with the level of rigor elsewhere; flagged rather than silently assumed safe.
+- **Submitter identity in the review queue is a raw user id**, not a resolved display name — `ReviewQueueScreen.kt`'s own comment explains why (it doesn't currently load circle member profiles the way Circle Detail does).
+- **`CreateTaskScreen`'s "GROUPS" choice still only sets `TaskAudience.Groups(emptyList())`** at creation — no way to pre-assign students to groups from the supervisor side; every group is student-initiated (form or join, never assigned).
 
 ## Directory map
-`features/task` now has the full data/domain/presentation/di stack, matching the step-1 structure doc. New top-level backend packages: `task`, `submission`, `media`.
+`features/task` gains `TaskGroupRepository`/`TaskGroupApi`/`TaskGroupRepositoryImpl` and the two group use cases alongside the existing task/submission stack. New backend files live in the existing `task` package (`TaskGroupEntity`, `TaskGroupRepository`, `TaskGroupService`, `TaskGroupController`) rather than a new top-level package, since a task group is conceptually part of the task feature, not its own domain.
+
+
 

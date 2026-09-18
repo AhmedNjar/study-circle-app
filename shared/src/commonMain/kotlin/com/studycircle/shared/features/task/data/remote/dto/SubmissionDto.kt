@@ -8,7 +8,10 @@ sealed class SubmitterRefDto {
     @Serializable
     @SerialName("INDIVIDUAL")
     data class Individual(val userId: String) : SubmitterRefDto()
-    // Phase 4 adds OnBehalfOfGroup(groupId, submittedByUserId) here.
+
+    @Serializable
+    @SerialName("GROUP")
+    data class OnBehalfOfGroup(val groupId: String, val submittedByUserId: String) : SubmitterRefDto()
 }
 
 // Discriminator values deliberately match TrackingMethodDto's, one-to-one.

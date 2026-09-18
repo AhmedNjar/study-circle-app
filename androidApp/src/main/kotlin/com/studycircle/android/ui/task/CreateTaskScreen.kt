@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.studycircle.android.ui.components.PrimaryButton
 import com.studycircle.shared.features.task.domain.model.ActivityType
 import com.studycircle.shared.features.task.domain.usecase.CreateTaskUseCase
+import com.studycircle.shared.features.task.presentation.createtask.AudienceChoice
 import com.studycircle.shared.features.task.presentation.createtask.CreateTaskEffect
 import com.studycircle.shared.features.task.presentation.createtask.CreateTaskIntent
 import com.studycircle.shared.features.task.presentation.createtask.CreateTaskViewModel
@@ -31,6 +32,9 @@ import com.studycircle.shared.features.task.presentation.createtask.TrackingChoi
 import com.studycircle.shared.localization.ArabicTerms
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.compose.koinInject
+
+import androidx.compose.ui.tooling.preview.Preview
+import com.studycircle.shared.features.task.presentation.createtask.CreateTaskState
 
 // A single-screen form for Phase 2, not the multi-step wizard sketched in
 // the UI/UX discussion — a working flat form now, upgradeable to a stepper
@@ -53,26 +57,14 @@ fun CreateTaskScreen(circleId: String, onCreated: (taskId: String) -> Unit) {
 
     CreateTaskContent(
         state = state,
-        onTitleChanged = { viewModel.dispatch(CreateTaskIntent.TitleChanged(it)) },
-        onDueDateChanged = { viewModel.dispatch(CreateTaskIntent.DueDateChanged(it)) },
-        onActivityTypeChanged = { viewModel.dispatch(CreateTaskIntent.ActivityTypeChanged(it)) },
-        onTrackingChoiceChanged = { viewModel.dispatch(CreateTaskIntent.TrackingChoiceChanged(it)) },
-        onMinDurationMinutesChanged = { viewModel.dispatch(CreateTaskIntent.MinDurationMinutesChanged(it)) },
-        onReflectionMinLengthChanged = { viewModel.dispatch(CreateTaskIntent.ReflectionMinLengthChanged(it)) },
-        onSubmit = { viewModel.dispatch(CreateTaskIntent.Submit) }
+        onIntent = { viewModel.dispatch(it) }
     )
 }
 
 @Composable
 fun CreateTaskContent(
-    state: com.studycircle.shared.features.task.presentation.createtask.CreateTaskState,
-    onTitleChanged: (String) -> Unit,
-    onDueDateChanged: (String) -> Unit,
-    onActivityTypeChanged: (ActivityType) -> Unit,
-    onTrackingChoiceChanged: (TrackingChoice) -> Unit,
-    onMinDurationMinutesChanged: (String) -> Unit,
-    onReflectionMinLengthChanged: (String) -> Unit,
-    onSubmit: () -> Unit
+    state: CreateTaskState,
+    onIntent: (CreateTaskIntent) -> Unit
 ) {
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Text("مهمة جديدة", style = MaterialTheme.typography.titleLarge)
@@ -80,7 +72,7 @@ fun CreateTaskContent(
 
         OutlinedTextField(
             value = state.title,
-            onValueChange = onTitleChanged,
+            onValueChange = { onIntent(CreateTaskIntent.TitleChanged(it)) },
             label = { Text("عنوان المهمة") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -88,7 +80,7 @@ fun CreateTaskContent(
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = state.dueDate,
-            onValueChange = onDueDateChanged,
+            onValueChange = { onIntent(CreateTaskIntent.DueDateChanged(it)) },
             label = { Text("تاريخ الاستحقاق (YYYY-MM-DD)") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -102,7 +94,7 @@ fun CreateTaskContent(
             activityChoices.forEachIndexed { index, type ->
                 SegmentedButton(
                     selected = state.activityType == type,
-                    onClick = { onActivityTypeChanged(type) },
+                    onClick = { onIntent(CreateTaskIntent.ActivityTypeChanged(type)) },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = activityChoices.size)
                 ) { Text(ArabicTerms.activityTypeLabel(type)) }
             }
@@ -114,12 +106,12 @@ fun CreateTaskContent(
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SegmentedButton(
                 selected = state.trackingChoice == TrackingChoice.TIMED_WITH_REFLECTION,
-                onClick = { onTrackingChoiceChanged(TrackingChoice.TIMED_WITH_REFLECTION) },
+                onClick = { onIntent(CreateTaskIntent.TrackingChoiceChanged(TrackingChoice.TIMED_WITH_REFLECTION)) },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
             ) { Text("قراءة بوقت وملخص") }
             SegmentedButton(
                 selected = state.trackingChoice == TrackingChoice.MEDIA_SUBMISSION,
-                onClick = { onTrackingChoiceChanged(TrackingChoice.MEDIA_SUBMISSION) },
+                onClick = { onIntent(CreateTaskIntent.TrackingChoiceChanged(TrackingChoice.MEDIA_SUBMISSION)) },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
             ) { Text("تسجيل صوتي") }
         }
@@ -128,7 +120,7 @@ fun CreateTaskContent(
         if (state.trackingChoice == TrackingChoice.TIMED_WITH_REFLECTION) {
             OutlinedTextField(
                 value = state.minDurationMinutes,
-                onValueChange = onMinDurationMinutesChanged,
+                onValueChange = { onIntent(CreateTaskIntent.MinDurationMinutesChanged(it)) },
                 label = { Text("الحد الأدنى بالدقائق") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
@@ -136,11 +128,27 @@ fun CreateTaskContent(
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(
                 value = state.reflectionMinLength,
-                onValueChange = onReflectionMinLengthChanged,
+                onValueChange = { onIntent(CreateTaskIntent.ReflectionMinLengthChanged(it)) },
                 label = { Text("الحد الأدنى لطول الملخص (بالحرف)") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Text("المشاركون", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SegmentedButton(
+                selected = state.audienceChoice == AudienceChoice.ALL_MEMBERS,
+                onClick = { onIntent(CreateTaskIntent.AudienceChoiceChanged(AudienceChoice.ALL_MEMBERS)) },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+            ) { Text("جميع الأعضاء") }
+            SegmentedButton(
+                selected = state.audienceChoice == AudienceChoice.GROUPS,
+                onClick = { onIntent(CreateTaskIntent.AudienceChoiceChanged(AudienceChoice.GROUPS)) },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+            ) { Text("مجموعات") }
         }
 
         state.errorMessage?.let {
@@ -150,26 +158,17 @@ fun CreateTaskContent(
 
         Spacer(Modifier.height(16.dp))
         if (state.isLoading) CircularProgressIndicator()
-        else PrimaryButton(text = "إنشاء المهمة", onClick = onSubmit)
+        else PrimaryButton(text = "إنشاء المهمة", onClick = { onIntent(CreateTaskIntent.Submit) })
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun CreateTaskPreview() {
+fun CreateTaskContentPreview() {
     MaterialTheme {
         CreateTaskContent(
-            state = com.studycircle.shared.features.task.presentation.createtask.CreateTaskState(
-                title = "مهمة تجريبية",
-                dueDate = "2023-12-31"
-            ),
-            onTitleChanged = {},
-            onDueDateChanged = {},
-            onActivityTypeChanged = {},
-            onTrackingChoiceChanged = {},
-            onMinDurationMinutesChanged = {},
-            onReflectionMinLengthChanged = {},
-            onSubmit = {}
+            state = CreateTaskState(),
+            onIntent = {}
         )
     }
 }

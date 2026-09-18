@@ -37,6 +37,9 @@ import com.studycircle.shared.features.auth.presentation.register.RegisterViewMo
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.compose.koinInject
 
+import androidx.compose.ui.tooling.preview.Preview
+import com.studycircle.shared.features.auth.presentation.register.RegisterState
+
 @Composable
 fun RegisterScreen(onRegistered: () -> Unit, onGoToLogin: () -> Unit) {
     val registerUseCase: RegisterUseCase = koinInject()
@@ -54,23 +57,15 @@ fun RegisterScreen(onRegistered: () -> Unit, onGoToLogin: () -> Unit) {
 
     RegisterContent(
         state = state,
-        onDisplayNameChanged = { viewModel.dispatch(RegisterIntent.DisplayNameChanged(it)) },
-        onUsernameChanged = { viewModel.dispatch(RegisterIntent.UsernameChanged(it)) },
-        onRoleChanged = { viewModel.dispatch(RegisterIntent.RoleChanged(it)) },
-        onPasswordChanged = { viewModel.dispatch(RegisterIntent.PasswordChanged(it)) },
-        onSubmit = { viewModel.dispatch(RegisterIntent.Submit) },
+        onIntent = { viewModel.dispatch(it) },
         onGoToLogin = onGoToLogin
     )
 }
 
 @Composable
 fun RegisterContent(
-    state: com.studycircle.shared.features.auth.presentation.register.RegisterState,
-    onDisplayNameChanged: (String) -> Unit,
-    onUsernameChanged: (String) -> Unit,
-    onRoleChanged: (Role) -> Unit,
-    onPasswordChanged: (String) -> Unit,
-    onSubmit: () -> Unit,
+    state: RegisterState,
+    onIntent: (RegisterIntent) -> Unit,
     onGoToLogin: () -> Unit
 ) {
     Column(
@@ -84,7 +79,7 @@ fun RegisterContent(
 
         OutlinedTextField(
             value = state.displayName,
-            onValueChange = onDisplayNameChanged,
+            onValueChange = { onIntent(RegisterIntent.DisplayNameChanged(it)) },
             label = { Text("الاسم") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -92,7 +87,7 @@ fun RegisterContent(
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = state.username,
-            onValueChange = onUsernameChanged,
+            onValueChange = { onIntent(RegisterIntent.UsernameChanged(it)) },
             label = { Text("اسم المستخدم") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -101,15 +96,17 @@ fun RegisterContent(
 
         Text("الدور", style = MaterialTheme.typography.labelMedium, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(4.dp))
+        // Directly exercises the Role enum + ArabicTerms mapping from step 1 —
+        // this toggle is the same one shown in the earlier UI/UX mockup.
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SegmentedButton(
                 selected = state.role == Role.SUPERVISOR,
-                onClick = { onRoleChanged(Role.SUPERVISOR) },
+                onClick = { onIntent(RegisterIntent.RoleChanged(Role.SUPERVISOR)) },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
             ) { Text("المشرف") }
             SegmentedButton(
                 selected = state.role == Role.STUDENT,
-                onClick = { onRoleChanged(Role.STUDENT) },
+                onClick = { onIntent(RegisterIntent.RoleChanged(Role.STUDENT)) },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
             ) { Text("السالك") }
         }
@@ -117,7 +114,7 @@ fun RegisterContent(
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = state.password,
-            onValueChange = onPasswordChanged,
+            onValueChange = { onIntent(RegisterIntent.PasswordChanged(it)) },
             label = { Text("كلمة المرور") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
@@ -133,7 +130,7 @@ fun RegisterContent(
         if (state.isLoading) {
             CircularProgressIndicator()
         } else {
-            PrimaryButton(text = "إنشاء حساب", onClick = onSubmit)
+            PrimaryButton(text = "إنشاء حساب", onClick = { onIntent(RegisterIntent.Submit) })
         }
 
         Spacer(Modifier.height(16.dp))
@@ -148,21 +145,13 @@ fun RegisterContent(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun RegisterPreview() {
+fun RegisterContentPreview() {
     MaterialTheme {
         RegisterContent(
-            state = com.studycircle.shared.features.auth.presentation.register.RegisterState(
-                displayName = "الاسم",
-                username = "user123",
-                role = Role.STUDENT
-            ),
-            onDisplayNameChanged = {},
-            onUsernameChanged = {},
-            onRoleChanged = {},
-            onPasswordChanged = {},
-            onSubmit = {},
+            state = RegisterState(),
+            onIntent = {},
             onGoToLogin = {}
         )
     }

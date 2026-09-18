@@ -41,12 +41,13 @@ internal fun TrackingMethodDto.toDomain(): TrackingMethod = when (this) {
 internal fun TaskAudience.toDto(): TaskAudienceDto = when (this) {
     TaskAudience.AllMembers -> TaskAudienceDto.AllMembers
     is TaskAudience.IndividualMembers -> TaskAudienceDto.IndividualMembers(memberIds)
-    is TaskAudience.Groups -> error("Group audiences aren't wired up until Phase 4")
+    is TaskAudience.Groups -> TaskAudienceDto.Groups(groupIds)
 }
 
 internal fun TaskAudienceDto.toDomain(): TaskAudience = when (this) {
     TaskAudienceDto.AllMembers -> TaskAudience.AllMembers
     is TaskAudienceDto.IndividualMembers -> TaskAudience.IndividualMembers(memberIds)
+    is TaskAudienceDto.Groups -> TaskAudience.Groups(groupIds)
 }
 
 internal fun TaskMetadata.toDto() = TaskMetadataDto(
