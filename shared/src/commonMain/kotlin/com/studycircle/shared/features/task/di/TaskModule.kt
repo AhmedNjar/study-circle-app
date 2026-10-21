@@ -18,6 +18,7 @@ import com.studycircle.shared.features.task.domain.usecase.ListSubmissionsUseCas
 import com.studycircle.shared.features.task.domain.usecase.ListTaskGroupsUseCase
 import com.studycircle.shared.features.task.domain.usecase.ListTasksUseCase
 import com.studycircle.shared.features.task.domain.usecase.ReviewSubmissionUseCase
+import com.studycircle.shared.features.task.domain.usecase.SyncPendingSubmissionsUseCase
 import com.studycircle.shared.features.task.domain.usecase.SubmitEvidenceUseCase
 import org.koin.dsl.module
 
@@ -42,4 +43,5 @@ val taskModule = module {
     factory { ReviewSubmissionUseCase(get()) }
     factory { FormOrJoinTaskGroupUseCase(get()) }
     factory { ListTaskGroupsUseCase(get()) }
+    factory { SyncPendingSubmissionsUseCase(get()) }
 }

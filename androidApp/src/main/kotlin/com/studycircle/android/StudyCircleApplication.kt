@@ -3,6 +3,7 @@ package com.studycircle.android
 import android.app.Application
 import com.studycircle.shared.core.database.DatabaseDriverFactory
 import com.studycircle.shared.core.di.appModules
+import com.studycircle.shared.core.network.ApiConfig
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -17,7 +18,13 @@ class StudyCircleApplication : Application() {
             // coreModule (commonMain doesn't know about android.content.Context).
             // The iOS entry point will need its own equivalent single{} for the
             // no-arg iOS actual once that target has a real app shell.
-            modules(appModules + module { single { DatabaseDriverFactory(get()) } })
+            modules(
+                appModules + module {
+                    single { DatabaseDriverFactory(get()) }
+                    // Per-build-type URL (debug → emulator host alias, release → https).
+                    single { ApiConfig(BuildConfig.API_BASE_URL) }
+                }
+            )
         }
     }
 }

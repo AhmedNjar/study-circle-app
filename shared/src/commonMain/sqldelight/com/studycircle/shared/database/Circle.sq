@@ -28,3 +28,18 @@ SELECT userId FROM CircleMember WHERE circleId = ?;
 
 insertMember:
 INSERT OR IGNORE INTO CircleMember(circleId, userId) VALUES (?, ?);
+
+-- Offline fallback for "my circles": the device may hold circles cached for a
+-- previous login, so the read is always scoped to the current user.
+selectCirclesForUser:
+SELECT * FROM CircleEntity
+WHERE supervisorId = :userId
+   OR id IN (SELECT circleId FROM CircleMember WHERE userId = :userId);
+
+-- A successful GET /circles is authoritative: replace the cache wholesale so a
+-- circle the user left/lost access to doesn't linger offline.
+deleteAllCircles:
+DELETE FROM CircleEntity;
+
+deleteAllMembers:
+DELETE FROM CircleMember;

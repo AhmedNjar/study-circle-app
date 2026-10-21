@@ -40,6 +40,9 @@ class SubmissionBelowThresholdException :
 class EvidenceTypeMismatchException :
     ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "EVIDENCE_TYPE_MISMATCH", "The submitted evidence doesn't match this task's tracking method")
 
+class InvalidTrackingException :
+    ApiException(HttpStatus.BAD_REQUEST, "INVALID_TRACKING", "Count-based tasks need a non-blank unit and a target above zero")
+
 class UnsupportedSubmitterException :
     ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_SUBMITTER", "Unrecognized submitter type")
 

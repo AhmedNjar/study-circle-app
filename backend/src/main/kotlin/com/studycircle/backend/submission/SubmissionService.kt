@@ -45,7 +45,8 @@ class SubmissionService(
             if (requesterId !in taskGroupService.memberIdsOf(group.id)) throw NotGroupMemberException()
         }
 
-        val task = taskService.getEntity(taskId)
+        // Must belong to the task's circle (also 404s on an unknown task id).
+        val task = taskService.requireMemberOf(taskId, requesterId)
         val tracking = taskService.trackingOf(task)
         validate(tracking, request.evidence)
 
@@ -61,7 +62,8 @@ class SubmissionService(
         return entity.toResponse()
     }
 
-    fun listByTask(taskId: String, status: String?): List<SubmissionResponse> {
+    fun listByTask(taskId: String, status: String?, requesterId: String): List<SubmissionResponse> {
+        taskService.requireSupervisorOf(taskId, requesterId)
         val entities = if (status != null) {
             submissionRepository.findByTaskIdAndStatus(taskId, SubmissionStatus.valueOf(status))
         } else {
@@ -70,8 +72,9 @@ class SubmissionService(
         return entities.map { it.toResponse() }
     }
 
-    fun review(submissionId: String, request: ReviewSubmissionRequest): SubmissionResponse {
+    fun review(submissionId: String, request: ReviewSubmissionRequest, requesterId: String): SubmissionResponse {
         val entity = submissionRepository.findById(submissionId).orElseThrow { SubmissionNotFoundException() }
+        taskService.requireSupervisorOf(entity.taskId, requesterId)
         val newStatus = SubmissionStatus.valueOf(request.status)
         entity.status = newStatus
         entity.supervisorNote = request.supervisorNote
@@ -145,6 +148,13 @@ class SubmissionService(
                 if (minDuration != null && ev.durationSeconds < minDuration) {
                     throw SubmissionBelowThresholdException()
                 }
+            }
+            is TrackingMethodDto.CountBased -> {
+                val ev = evidence as? SubmissionEvidenceDto.CountBased ?: throw EvidenceTypeMismatchException()
+                if (ev.countAchieved < tracking.target) throw SubmissionBelowThresholdException()
+            }
+            is TrackingMethodDto.ManualCheckIn -> {
+                if (evidence !is SubmissionEvidenceDto.ManualCheckIn) throw EvidenceTypeMismatchException()
             }
         }
     }

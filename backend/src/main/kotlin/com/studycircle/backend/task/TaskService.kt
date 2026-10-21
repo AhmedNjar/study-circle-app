@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.studycircle.backend.circle.CircleMemberRepository
 import com.studycircle.backend.circle.CircleRepository
 import com.studycircle.backend.common.CircleNotFoundException
+import com.studycircle.backend.common.InvalidTrackingException
 import com.studycircle.backend.common.NotCircleMemberException
 import com.studycircle.backend.common.NotCircleSupervisorException
 import com.studycircle.backend.common.TaskNotFoundException
@@ -27,6 +28,9 @@ class TaskService(
     fun create(circleId: String, request: CreateTaskRequest, supervisorId: String): TaskResponse {
         val circle = circleRepository.findById(circleId).orElseThrow { CircleNotFoundException() }
         if (circle.supervisorId != supervisorId) throw NotCircleSupervisorException()
+        (request.tracking as? TrackingMethodDto.CountBased)?.let {
+            if (it.target <= 0 || it.unit.isBlank()) throw InvalidTrackingException()
+        }
 
         val entity = TaskEntity(
             id = UUID.randomUUID().toString(),
@@ -49,6 +53,23 @@ class TaskService(
         if (circle.supervisorId != requesterId && !isMember) throw NotCircleMemberException()
 
         return taskRepository.findByCircleId(circleId).map { it.toResponse() }
+    }
+
+    // Authorization helpers for SubmissionService. A task id alone is not proof of
+    // access: without these, any authenticated supervisor could list or review
+    // another circle's submissions, and any student could submit to a circle they
+    // never joined.
+    internal fun requireSupervisorOf(taskId: String, userId: String): TaskEntity {
+        val task = getEntity(taskId)
+        val circle = circleRepository.findById(task.circleId).orElseThrow { CircleNotFoundException() }
+        if (circle.supervisorId != userId) throw NotCircleSupervisorException()
+        return task
+    }
+
+    internal fun requireMemberOf(taskId: String, userId: String): TaskEntity {
+        val task = getEntity(taskId)
+        if (!memberRepository.existsByCircleIdAndUserId(task.circleId, userId)) throw NotCircleMemberException()
+        return task
     }
 
     // Package-internal so SubmissionService can look up a task's tracking

@@ -27,7 +27,7 @@ class SubmissionController(private val submissionService: SubmissionService) {
         @PathVariable taskId: String,
         @RequestParam(required = false) status: String?
     ): ResponseEntity<List<SubmissionResponse>> =
-        ResponseEntity.ok(submissionService.listByTask(taskId, status))
+        ResponseEntity.ok(submissionService.listByTask(taskId, status, CurrentUser.get().userId))
 
     @PatchMapping("/submissions/{submissionId}")
     @PreAuthorize("hasRole('SUPERVISOR')")
@@ -35,5 +35,5 @@ class SubmissionController(private val submissionService: SubmissionService) {
         @PathVariable submissionId: String,
         @RequestBody request: ReviewSubmissionRequest
     ): ResponseEntity<SubmissionResponse> =
-        ResponseEntity.ok(submissionService.review(submissionId, request))
+        ResponseEntity.ok(submissionService.review(submissionId, request, CurrentUser.get().userId))
 }

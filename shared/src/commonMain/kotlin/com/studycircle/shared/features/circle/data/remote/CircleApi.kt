@@ -27,4 +27,7 @@ class CircleApi(private val client: HttpClient) {
 
     suspend fun getDetail(circleId: String): CircleDetailResponseDto =
         client.get("/api/v1/circles/$circleId").body()
+
+    suspend fun listMine(): List<CircleResponseDto> =
+        client.get("/api/v1/circles").body()
 }

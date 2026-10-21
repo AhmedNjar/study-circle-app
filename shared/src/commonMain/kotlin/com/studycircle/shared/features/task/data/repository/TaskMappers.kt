@@ -23,19 +23,20 @@ internal fun NewTaskInput.toDto() = CreateTaskRequestDto(
     metadata = metadata.toDto()
 )
 
-// error(...) for the not-yet-supported branches is intentional: Phase 2's UI
-// never constructs a CountBased/ManualCheckIn tracking or a Groups audience,
-// so hitting this would mean a real bug upstream, not a case to swallow.
+// Exhaustive on purpose (no else): adding a TrackingMethod variant must fail the
+// build here until its wire format is decided.
 internal fun TrackingMethod.toDto(): TrackingMethodDto = when (this) {
     is TrackingMethod.TimedWithReflection -> TrackingMethodDto.TimedWithReflection(minDurationSeconds, reflectionMinLength)
     is TrackingMethod.MediaSubmission -> TrackingMethodDto.MediaSubmission(allowedTypes.map { it.name }.toSet(), minDurationSeconds)
-    is TrackingMethod.CountBased -> error("CountBased tracking isn't wired up until Phase 5")
-    TrackingMethod.ManualCheckIn -> error("ManualCheckIn tracking isn't wired up until Phase 5")
+    is TrackingMethod.CountBased -> TrackingMethodDto.CountBased(unit, target)
+    TrackingMethod.ManualCheckIn -> TrackingMethodDto.ManualCheckIn
 }
 
 internal fun TrackingMethodDto.toDomain(): TrackingMethod = when (this) {
     is TrackingMethodDto.TimedWithReflection -> TrackingMethod.TimedWithReflection(minDurationSeconds, reflectionMinLength)
     is TrackingMethodDto.MediaSubmission -> TrackingMethod.MediaSubmission(allowedTypes.map { MediaType.valueOf(it) }.toSet(), minDurationSeconds)
+    is TrackingMethodDto.CountBased -> TrackingMethod.CountBased(unit, target)
+    TrackingMethodDto.ManualCheckIn -> TrackingMethod.ManualCheckIn
 }
 
 internal fun TaskAudience.toDto(): TaskAudienceDto = when (this) {

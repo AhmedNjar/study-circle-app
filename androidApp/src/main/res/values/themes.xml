@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window theme only — all real styling lives in Compose (StudyCircleTheme).
+         NoActionBar stops the platform ActionBar showing above the Compose content. -->
+    <style name="Theme.StudyCircle" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

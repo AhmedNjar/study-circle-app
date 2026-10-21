@@ -15,6 +15,14 @@ sealed class TrackingMethodDto {
     @Serializable
     @SerialName("MEDIA_SUBMISSION")
     data class MediaSubmission(val allowedTypes: Set<String>, val minDurationSeconds: Int? = null) : TrackingMethodDto()
+
+    @Serializable
+    @SerialName("COUNT_BASED")
+    data class CountBased(val unit: String, val target: Int) : TrackingMethodDto()
+
+    @Serializable
+    @SerialName("MANUAL_CHECK_IN")
+    data object ManualCheckIn : TrackingMethodDto()
 }
 
 @Serializable

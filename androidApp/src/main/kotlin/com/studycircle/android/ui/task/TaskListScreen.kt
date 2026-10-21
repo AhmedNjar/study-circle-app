@@ -1,16 +1,26 @@
 package com.studycircle.android.ui.task
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -22,12 +32,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import com.studycircle.android.ui.mvi.rememberMviViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.studycircle.android.ui.components.IslamicBackground
+import com.studycircle.android.ui.components.PaperCard
+import com.studycircle.android.ui.components.activityEmoji
+import com.studycircle.android.ui.components.activityLabel
+import com.studycircle.android.ui.components.startLabel
+import com.studycircle.android.ui.components.toArabicLong
 import com.studycircle.android.ui.streak.StreakBadge
 import com.studycircle.android.ui.streak.StreakBadgeContent
+import com.studycircle.android.ui.theme.StudyCircleTheme
 import com.studycircle.shared.features.streak.presentation.badge.StreakBadgeState
 import com.studycircle.shared.features.task.domain.model.ActivityType
 import com.studycircle.shared.features.task.domain.model.CircleTask
@@ -38,83 +58,109 @@ import com.studycircle.shared.features.task.domain.usecase.ListTasksUseCase
 import com.studycircle.shared.features.task.presentation.tasklist.TaskListIntent
 import com.studycircle.shared.features.task.presentation.tasklist.TaskListState
 import com.studycircle.shared.features.task.presentation.tasklist.TaskListViewModel
-import com.studycircle.shared.localization.ArabicTerms
 import kotlinx.datetime.LocalDate
 import org.koin.compose.koinInject
 
 @Composable
 fun TaskListScreen(
     circleId: String,
+    isSupervisor: Boolean,
     onCreateTask: () -> Unit,
     onOpenTask: (taskId: String) -> Unit,
     onReviewTask: (taskId: String) -> Unit
 ) {
     val useCase: ListTasksUseCase = koinInject()
-    val scope = rememberCoroutineScope()
-    val viewModel = remember { TaskListViewModel(useCase, scope) }
+    val viewModel = rememberMviViewModel { scope -> TaskListViewModel(useCase, scope) }
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(circleId) { viewModel.dispatch(TaskListIntent.Load(circleId)) }
 
-    TaskListContent(
-        circleId = circleId,
-        state = state,
-        onCreateTask = onCreateTask,
-        onOpenTask = onOpenTask,
-        onReviewTask = onReviewTask
-    )
+    StudyCircleTheme {
+        TaskListContent(
+            circleId = circleId,
+            state = state,
+            isSupervisor = isSupervisor,
+            onCreateTask = onCreateTask,
+            onOpenTask = onOpenTask,
+            onReviewTask = onReviewTask
+        )
+    }
 }
 
 @Composable
 fun TaskListContent(
     circleId: String,
     state: TaskListState,
+    isSupervisor: Boolean,
     onCreateTask: () -> Unit,
     onOpenTask: (taskId: String) -> Unit,
     onReviewTask: (taskId: String) -> Unit,
     streakBadge: @Composable () -> Unit = { StreakBadge(circleId = circleId) }
 ) {
     Scaffold(
+        // Only supervisors create tasks (the backend enforces it too).
         floatingActionButton = {
-            // Shown regardless of role — same Phase 1 simplification as
-            // CircleHomeScreen's two buttons. The backend's @PreAuthorize on
-            // POST /tasks is what actually enforces SUPERVISOR-only creation.
-            FloatingActionButton(onClick = onCreateTask) { Text("+") }
-        }
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            Box(Modifier.padding(16.dp)) {
-                streakBadge()
+            if (isSupervisor) {
+                FloatingActionButton(
+                    onClick = onCreateTask,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ) {
+                    Text("+", style = MaterialTheme.typography.headlineSmall)
+                }
             }
-            Box(Modifier.weight(1f)) {
-                when {
-                    state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .statusBarsPadding()
+        ) {
+            IslamicBackground(Modifier.fillMaxSize())
+
+            Column(Modifier.fillMaxSize()) {
+                Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+                    streakBadge()
+                }
+
+                if (state.isLoading) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
-                    state.tasks.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("لا توجد مهام بعد", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    else -> LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(state.tasks) { task ->
-                            Card {
-                                Column(Modifier.padding(16.dp)) {
-                                    Text(task.title, style = MaterialTheme.typography.titleMedium)
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        "${ArabicTerms.activityTypeLabel(task.activityType)} · ${task.dueDate}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        TextButton(onClick = { onOpenTask(task.id) }) { Text("ابدأ") }
-                                        TextButton(onClick = { onReviewTask(task.id) }) { Text("مراجعة") }
-                                    }
-                                }
+                } else if (state.tasks.isEmpty()) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(20.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)))
                             }
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                "لا توجد مهام نشطة حالياً",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(state.tasks, key = { it.id }) { task ->
+                            IslamicTaskCard(
+                                task = task,
+                                isSupervisor = isSupervisor,
+                                onOpenTask = { onOpenTask(task.id) },
+                                onReviewTask = { onReviewTask(task.id) }
+                            )
                         }
                     }
                 }
@@ -123,13 +169,111 @@ fun TaskListContent(
     }
 }
 
+@Composable
+private fun IslamicTaskCard(
+    task: CircleTask,
+    isSupervisor: Boolean,
+    onOpenTask: () -> Unit,
+    onReviewTask: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PaperCard(
+        modifier = modifier.fillMaxWidth(),
+        borderColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+    ) {
+        Box(modifier = Modifier.height(IntrinsicSize.Min)) {
+            // Gold accent "glow" line
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(4.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                                MaterialTheme.colorScheme.secondary,
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                            )
+                        )
+                    )
+                    .align(Alignment.CenterEnd)
+            )
+
+            Column(Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = task.title,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "${activityLabel(task)} • ${task.dueDate.toArabicLong()}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(activityEmoji(task.activityType), style = MaterialTheme.typography.titleLarge)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isSupervisor) {
+                        TextButton(
+                            onClick = onReviewTask,
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ) {
+                            Text("مراجعة", style = MaterialTheme.typography.labelLarge)
+                        }
+                        Spacer(Modifier.size(8.dp))
+                    }
+                    TextButton(
+                        onClick = onOpenTask,
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.secondary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
+                    ) {
+                        Text(startLabel(task.activityType), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
+    }
+}
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)
 @Composable
 private fun TaskListPreview() {
-    MaterialTheme {
+    StudyCircleTheme {
         TaskListContent(
             circleId = "c1",
+            isSupervisor = true,
             state = TaskListState(
                 tasks = listOf(
                     CircleTask(

@@ -13,8 +13,12 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1"
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/\"")
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -33,6 +37,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.7.2")
     implementation("androidx.compose.ui:ui-tooling-preview:1.7.2")
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.2")
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.2")
     implementation("androidx.compose.material3:material3:1.3.0")
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("io.insert-koin:koin-android:3.5.6")

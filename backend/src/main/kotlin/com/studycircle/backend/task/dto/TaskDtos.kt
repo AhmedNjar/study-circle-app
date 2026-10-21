@@ -3,17 +3,16 @@ package com.studycircle.backend.task.dto
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 
-// Phase 2 only wires up two tracking methods and two audience shapes — the
-// ones the original spec named concretely (book reading, Quran recitation;
-// everyone or specific people). CountBased/ManualCheckIn and Groups slot in
-// as new @JsonSubTypes entries in Phase 4/5 without touching anything else,
-// which is the whole point of the composition-over-sealed-hierarchy design
-// from step 1.
+// Tracking methods mirror the client's TrackingMethod 1:1. Adding a new one is
+// a new @JsonSubTypes entry + a branch in SubmissionService.validate() — nothing
+// else — which is the point of the composition-over-sealed-hierarchy design.
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = TrackingMethodDto.TimedWithReflection::class, name = "TIMED_WITH_REFLECTION"),
-    JsonSubTypes.Type(value = TrackingMethodDto.MediaSubmission::class, name = "MEDIA_SUBMISSION")
+    JsonSubTypes.Type(value = TrackingMethodDto.MediaSubmission::class, name = "MEDIA_SUBMISSION"),
+    JsonSubTypes.Type(value = TrackingMethodDto.CountBased::class, name = "COUNT_BASED"),
+    JsonSubTypes.Type(value = TrackingMethodDto.ManualCheckIn::class, name = "MANUAL_CHECK_IN")
 )
 sealed class TrackingMethodDto {
     abstract val type: String
@@ -29,6 +28,16 @@ sealed class TrackingMethodDto {
         val allowedTypes: Set<String>,
         val minDurationSeconds: Int? = null
     ) : TrackingMethodDto()
+
+    // unit is a free label ("pages", "reps", "km", "ayat"); target must be > 0
+    // (enforced in TaskService.create).
+    data class CountBased(
+        override val type: String = "COUNT_BASED",
+        val unit: String,
+        val target: Int
+    ) : TrackingMethodDto()
+
+    data class ManualCheckIn(override val type: String = "MANUAL_CHECK_IN") : TrackingMethodDto()
 }
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")

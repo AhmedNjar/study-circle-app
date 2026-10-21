@@ -6,6 +6,8 @@ import com.studycircle.shared.features.auth.data.remote.AuthApi
 import com.studycircle.shared.features.auth.data.repository.AuthRepositoryImpl
 import com.studycircle.shared.features.auth.domain.repository.AuthRepository
 import com.studycircle.shared.features.auth.domain.usecase.LoginUseCase
+import com.studycircle.shared.features.auth.domain.usecase.LogoutUseCase
+import com.studycircle.shared.features.auth.domain.usecase.ObserveSessionUseCase
 import com.studycircle.shared.features.auth.domain.usecase.RegisterUseCase
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -18,4 +20,6 @@ val authModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     factory { LoginUseCase(get()) }
     factory { RegisterUseCase(get()) }
+    factory { ObserveSessionUseCase(get()) }
+    factory { LogoutUseCase(get()) }
 }

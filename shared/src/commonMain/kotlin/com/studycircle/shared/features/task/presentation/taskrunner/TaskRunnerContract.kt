@@ -15,6 +15,9 @@ sealed interface TaskRunnerIntent : MviIntent {
     data class TimerTicked(val elapsedSeconds: Long) : TaskRunnerIntent
     data class ReflectionChanged(val value: String) : TaskRunnerIntent
 
+    // CountBased flow
+    data class CountChanged(val value: Int) : TaskRunnerIntent
+
     // MediaSubmission flow — the platform layer owns the actual MediaRecorder
     // calls; this contract only tracks the recording's outcome.
     data object StartRecording : TaskRunnerIntent
@@ -45,6 +48,9 @@ data class TaskRunnerState(
     val isTimerRunning: Boolean = false,
     val elapsedSeconds: Long = 0,
     val reflectionText: String = "",
+
+    // CountBased state
+    val countAchieved: Int = 0,
 
     // MediaSubmission state
     val recordingState: RecordingState = RecordingState.Idle,

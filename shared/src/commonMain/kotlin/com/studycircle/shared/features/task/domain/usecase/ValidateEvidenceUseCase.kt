@@ -19,9 +19,24 @@ object ValidateEvidenceUseCase {
         when (tracking) {
             is TrackingMethod.TimedWithReflection -> validateTimedReflection(tracking, evidence)
             is TrackingMethod.MediaSubmission -> validateMedia(tracking, evidence)
-            is TrackingMethod.CountBased, TrackingMethod.ManualCheckIn ->
-                EvidenceValidationResult.Valid // not wired up until Phase 5
+            is TrackingMethod.CountBased -> validateCount(tracking, evidence)
+            TrackingMethod.ManualCheckIn ->
+                if (evidence is SubmissionEvidence.CheckIn) EvidenceValidationResult.Valid
+                else EvidenceValidationResult.Invalid("نوع الدليل غير متطابق مع نوع المهمة")
         }
+
+    private fun validateCount(
+        tracking: TrackingMethod.CountBased,
+        evidence: SubmissionEvidence
+    ): EvidenceValidationResult {
+        val ev = evidence as? SubmissionEvidence.Count
+            ?: return EvidenceValidationResult.Invalid("نوع الدليل غير متطابق مع نوع المهمة")
+        return if (ev.countAchieved < tracking.target) {
+            EvidenceValidationResult.Invalid("العدد المُنجز أقل من الهدف المطلوب")
+        } else {
+            EvidenceValidationResult.Valid
+        }
+    }
 
     private fun validateTimedReflection(
         tracking: TrackingMethod.TimedWithReflection,

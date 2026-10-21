@@ -27,7 +27,8 @@ internal fun SubmissionEvidence.toDto(): SubmissionEvidenceDto = when (this) {
         mediaType = mediaType.name,
         durationSeconds = durationSeconds
     )
-    SubmissionEvidence.CheckIn -> error("CheckIn evidence isn't wired up until Phase 5")
+    is SubmissionEvidence.Count -> SubmissionEvidenceDto.CountBased(countAchieved)
+    SubmissionEvidence.CheckIn -> SubmissionEvidenceDto.ManualCheckIn
 }
 
 internal fun SubmissionEvidenceDto.toDomain(): SubmissionEvidence = when (this) {
@@ -38,6 +39,8 @@ internal fun SubmissionEvidenceDto.toDomain(): SubmissionEvidence = when (this) 
         mediaType = MediaType.valueOf(mediaType),
         durationSeconds = durationSeconds
     )
+    is SubmissionEvidenceDto.CountBased -> SubmissionEvidence.Count(countAchieved)
+    SubmissionEvidenceDto.ManualCheckIn -> SubmissionEvidence.CheckIn
 }
 
 internal fun SubmissionResponseDto.toDomain() = Submission(

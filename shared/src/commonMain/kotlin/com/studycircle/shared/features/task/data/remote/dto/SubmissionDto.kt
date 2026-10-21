@@ -24,6 +24,14 @@ sealed class SubmissionEvidenceDto {
     @Serializable
     @SerialName("MEDIA_SUBMISSION")
     data class Media(val remoteMediaUrl: String, val mediaType: String, val durationSeconds: Int) : SubmissionEvidenceDto()
+
+    @Serializable
+    @SerialName("COUNT_BASED")
+    data class CountBased(val countAchieved: Int) : SubmissionEvidenceDto()
+
+    @Serializable
+    @SerialName("MANUAL_CHECK_IN")
+    data object ManualCheckIn : SubmissionEvidenceDto()
 }
 
 @Serializable

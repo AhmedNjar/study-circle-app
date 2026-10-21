@@ -46,6 +46,31 @@ class CircleRepositoryImpl(
                 )
             }
 
+    override suspend fun listMine(userId: String): Result<List<Circle>> {
+        val remote = safeApiCall { api.listMine() }
+        remote.onSuccess { dtos ->
+            database.transaction {
+                queries.deleteAllCircles()
+                queries.deleteAllMembers()
+                dtos.forEach(::cache)
+            }
+        }
+        return remote.map { dtos -> dtos.map { it.toDomain() } }
+            .recoverCatching { error ->
+                val cached = queries.selectCirclesForUser(userId).executeAsList()
+                if (cached.isEmpty()) throw error
+                cached.map { row ->
+                    Circle(
+                        id = row.id, name = row.name, joinCode = row.joinCode,
+                        supervisorId = row.supervisorId,
+                        memberIds = queries.selectMembers(row.id).executeAsList(),
+                        createdAt = Instant.parse(row.createdAt),
+                        isActive = row.isActive == 1L
+                    )
+                }
+            }
+    }
+
     private fun cache(dto: CircleResponseDto) {
         queries.insertOrReplaceCircle(dto.id, dto.name, dto.joinCode, dto.supervisorId, dto.createdAt, if (dto.isActive) 1L else 0L)
         dto.memberIds.forEach { queries.insertMember(dto.id, it) }

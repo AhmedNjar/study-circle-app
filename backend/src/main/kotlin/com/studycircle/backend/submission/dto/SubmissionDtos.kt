@@ -24,7 +24,9 @@ sealed class SubmitterRefDto {
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = SubmissionEvidenceDto.TimedReflection::class, name = "TIMED_WITH_REFLECTION"),
-    JsonSubTypes.Type(value = SubmissionEvidenceDto.Media::class, name = "MEDIA_SUBMISSION")
+    JsonSubTypes.Type(value = SubmissionEvidenceDto.Media::class, name = "MEDIA_SUBMISSION"),
+    JsonSubTypes.Type(value = SubmissionEvidenceDto.CountBased::class, name = "COUNT_BASED"),
+    JsonSubTypes.Type(value = SubmissionEvidenceDto.ManualCheckIn::class, name = "MANUAL_CHECK_IN")
 )
 sealed class SubmissionEvidenceDto {
     abstract val type: String
@@ -41,6 +43,13 @@ sealed class SubmissionEvidenceDto {
         val mediaType: String,
         val durationSeconds: Int
     ) : SubmissionEvidenceDto()
+
+    data class CountBased(
+        override val type: String = "COUNT_BASED",
+        val countAchieved: Int
+    ) : SubmissionEvidenceDto()
+
+    data class ManualCheckIn(override val type: String = "MANUAL_CHECK_IN") : SubmissionEvidenceDto()
 }
 
 data class SubmitSubmissionRequest(

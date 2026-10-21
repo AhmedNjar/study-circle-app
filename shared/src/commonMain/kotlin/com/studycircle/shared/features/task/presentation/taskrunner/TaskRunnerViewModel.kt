@@ -36,6 +36,8 @@ class TaskRunnerViewModel(
             }
             is TaskRunnerIntent.TimerTicked -> setState { copy(elapsedSeconds = intent.elapsedSeconds) }
             is TaskRunnerIntent.ReflectionChanged -> setState { copy(reflectionText = intent.value, errorMessage = null) }
+            is TaskRunnerIntent.CountChanged ->
+                setState { copy(countAchieved = intent.value.coerceAtLeast(0), errorMessage = null) }
             TaskRunnerIntent.StartRecording -> {
                 setState { copy(recordingState = RecordingState.Recording, errorMessage = null) }
                 emitEffect(TaskRunnerEffect.StartPlatformRecording)
@@ -136,7 +138,9 @@ class TaskRunnerViewModel(
                     )
                 }
             }
-            else -> null
+            is TrackingMethod.CountBased -> SubmissionEvidence.Count(s.countAchieved)
+            TrackingMethod.ManualCheckIn -> SubmissionEvidence.CheckIn
+            null -> null
         }
     }
 }

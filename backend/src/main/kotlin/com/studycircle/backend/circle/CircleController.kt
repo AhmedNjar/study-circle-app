@@ -24,6 +24,10 @@ class CircleController(private val circleService: CircleService) {
     fun join(@RequestBody request: JoinCircleRequest): ResponseEntity<CircleResponse> =
         ResponseEntity.ok(circleService.join(request.joinCode, CurrentUser.get().userId))
 
+    @GetMapping
+    fun listMine(): ResponseEntity<List<CircleResponse>> =
+        ResponseEntity.ok(circleService.listMine(CurrentUser.get().userId))
+
     @GetMapping("/{circleId}")
     fun detail(@PathVariable circleId: String): ResponseEntity<CircleDetailResponse> =
         ResponseEntity.ok(circleService.getDetail(circleId, CurrentUser.get().userId))

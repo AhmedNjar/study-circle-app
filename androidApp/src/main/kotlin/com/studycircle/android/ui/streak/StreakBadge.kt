@@ -13,7 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import com.studycircle.android.ui.mvi.rememberMviViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,8 +40,7 @@ private val GoldText = Color(0xFF854F0B) // amber-800 — readable on the pale g
 fun StreakBadge(circleId: String, groupId: String? = null, modifier: Modifier = Modifier) {
     val getStreakUseCase: GetStreakUseCase = koinInject()
     val authRepository: AuthRepository = koinInject()
-    val scope = rememberCoroutineScope()
-    val viewModel = remember { StreakBadgeViewModel(getStreakUseCase, authRepository, scope) }
+    val viewModel = rememberMviViewModel(key = "$circleId/$groupId") { scope -> StreakBadgeViewModel(getStreakUseCase, authRepository, scope) }
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(circleId, groupId) { viewModel.dispatch(StreakBadgeIntent.Load(circleId, groupId)) }

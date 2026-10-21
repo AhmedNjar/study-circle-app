@@ -25,6 +25,10 @@ sealed class SubmissionEvidence {
         val durationSeconds: Int
     ) : SubmissionEvidence()
 
+    // CountBased tasks (pages, reps, km, ayat, ...). The unit/target live on the
+    // task's TrackingMethod.CountBased; evidence only carries what was achieved.
+    data class Count(val countAchieved: Int) : SubmissionEvidence()
+
     data object CheckIn : SubmissionEvidence()
 }
 

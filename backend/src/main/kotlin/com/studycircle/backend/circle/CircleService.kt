@@ -41,6 +41,19 @@ class CircleService(
         return circle.toResponse(memberIds = currentMemberIds(circle.id))
     }
 
+    // Every circle the caller supervises OR belongs to. Role isn't consulted: a
+    // supervisor has supervisorId matches, a student has membership rows, and the
+    // union is correct for both without a role branch.
+    fun listMine(userId: String): List<CircleResponse> {
+        val supervised = circleRepository.findBySupervisorId(userId)
+        val memberOfIds = memberRepository.findByUserId(userId).map { it.circleId }
+        val joined = if (memberOfIds.isEmpty()) emptyList() else circleRepository.findAllById(memberOfIds)
+        return (supervised + joined)
+            .distinctBy { it.id }
+            .sortedByDescending { it.createdAt }
+            .map { it.toResponse(memberIds = currentMemberIds(it.id)) }
+    }
+
     fun getDetail(circleId: String, requesterId: String): CircleDetailResponse {
         val circle = circleRepository.findById(circleId).orElseThrow { CircleNotFoundException() }
         val memberIds = currentMemberIds(circle.id)

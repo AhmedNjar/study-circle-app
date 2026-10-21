@@ -1,19 +1,19 @@
 package com.studycircle.shared.features.task.presentation.createtask
 
 import com.studycircle.shared.core.mvi.MviViewModel
+import com.studycircle.shared.features.task.domain.model.ActivityType
 import com.studycircle.shared.features.task.domain.model.MediaType
 import com.studycircle.shared.features.task.domain.model.NewTaskInput
 import com.studycircle.shared.features.task.domain.model.TaskAudience
+import com.studycircle.shared.features.task.domain.model.TaskMetadata
 import com.studycircle.shared.features.task.domain.model.TrackingMethod
 import com.studycircle.shared.features.task.domain.usecase.CreateTaskUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.datetime.LocalDate
 
-// Audience is fixed to AllMembers here — Phase 2's UI doesn't expose
-// per-member or group targeting yet, even though the domain/data/backend
-// layers already support IndividualMembers. That's a UI scope line, not an
-// architecture gap: TaskAudience.IndividualMembers works end to end today,
-// there's just no picker for it.
+// Audience choices are AllMembers or Groups; per-member targeting
+// (TaskAudience.IndividualMembers) works end to end in the domain/data/backend
+// layers but still has no picker — a UI scope line, not an architecture gap.
 class CreateTaskViewModel(
     private val circleId: String,
     private val createTaskUseCase: CreateTaskUseCase,
@@ -24,10 +24,22 @@ class CreateTaskViewModel(
         when (intent) {
             is CreateTaskIntent.TitleChanged -> setState { copy(title = intent.value, errorMessage = null) }
             is CreateTaskIntent.DueDateChanged -> setState { copy(dueDate = intent.value, errorMessage = null) }
-            is CreateTaskIntent.ActivityTypeChanged -> setState { copy(activityType = intent.value) }
+            // Picking an activity pre-selects the evidence method that usually fits it;
+            // the supervisor can still override it (a workout can be timed, counted
+            // or just checked in).
+            is CreateTaskIntent.ActivityTypeChanged -> setState {
+                copy(
+                    activityType = intent.value,
+                    trackingChoice = defaultTrackingFor(intent.value),
+                    errorMessage = null
+                )
+            }
             is CreateTaskIntent.TrackingChoiceChanged -> setState { copy(trackingChoice = intent.value) }
             is CreateTaskIntent.MinDurationMinutesChanged -> setState { copy(minDurationMinutes = intent.value) }
             is CreateTaskIntent.ReflectionMinLengthChanged -> setState { copy(reflectionMinLength = intent.value) }
+            is CreateTaskIntent.CountUnitChanged -> setState { copy(countUnit = intent.value, errorMessage = null) }
+            is CreateTaskIntent.CountTargetChanged -> setState { copy(countTarget = intent.value, errorMessage = null) }
+            is CreateTaskIntent.CustomActivityLabelChanged -> setState { copy(customActivityLabel = intent.value, errorMessage = null) }
             is CreateTaskIntent.AudienceChoiceChanged -> setState { copy(audienceChoice = intent.value) }
             CreateTaskIntent.Submit -> submit()
         }
@@ -56,6 +68,27 @@ class CreateTaskViewModel(
                 TrackingMethod.TimedWithReflection(minDurationSeconds = minutes * 60, reflectionMinLength = reflectionLen)
             }
             TrackingChoice.MEDIA_SUBMISSION -> TrackingMethod.MediaSubmission(allowedTypes = setOf(MediaType.AUDIO))
+            TrackingChoice.COUNT_BASED -> {
+                val target = s.countTarget.toIntOrNull()
+                if (target == null || target <= 0 || s.countUnit.isBlank()) {
+                    setState { copy(errorMessage = "أدخل الوحدة وهدفًا رقميًا أكبر من صفر") }
+                    return
+                }
+                TrackingMethod.CountBased(unit = s.countUnit.trim(), target = target)
+            }
+            TrackingChoice.MANUAL_CHECK_IN -> TrackingMethod.ManualCheckIn
+        }
+
+        // CUSTOM has no enum value of its own to say what the activity IS, so the
+        // supervisor's free-text label travels in metadata (see API contract).
+        val metadata = if (s.activityType == ActivityType.CUSTOM) {
+            if (s.customActivityLabel.isBlank()) {
+                setState { copy(errorMessage = "اكتب اسم النشاط المخصص") }
+                return
+            }
+            TaskMetadata(customFields = mapOf("activityLabel" to s.customActivityLabel.trim()))
+        } else {
+            TaskMetadata()
         }
 
         setState { copy(isLoading = true, errorMessage = null) }
@@ -67,7 +100,7 @@ class CreateTaskViewModel(
         }
         val input = NewTaskInput(
             title = s.title, dueDate = dueDate, activityType = s.activityType,
-            tracking = tracking, audience = audience
+            tracking = tracking, audience = audience, metadata = metadata
         )
         createTaskUseCase(circleId, input).fold(
             onSuccess = { task ->
@@ -76,5 +109,12 @@ class CreateTaskViewModel(
             },
             onFailure = { setState { copy(isLoading = false, errorMessage = "تعذر إنشاء المهمة") } }
         )
+    }
+
+    private fun defaultTrackingFor(type: ActivityType): TrackingChoice = when (type) {
+        ActivityType.READING, ActivityType.WATCHING -> TrackingChoice.TIMED_WITH_REFLECTION
+        ActivityType.RECITATION -> TrackingChoice.MEDIA_SUBMISSION
+        ActivityType.WORKOUT -> TrackingChoice.COUNT_BASED
+        ActivityType.CUSTOM -> TrackingChoice.MANUAL_CHECK_IN
     }
 }
