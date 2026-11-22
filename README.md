@@ -1,31 +1,68 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# StudyCircle (المحفظ والمتعلم)
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
-
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
-
-### Running the apps
-
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
-
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
-
-### Running tests
-
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
-
-- Android tests: `./gradlew :shared:testAndroidHostTest`
-- iOS tests: `./gradlew :shared:iosSimulatorArm64Test`
+StudyCircle is a cross-platform mobile application built with **Kotlin Multiplatform** and **Compose Multiplatform** designed for managing Quran and study circles, tracking daily reading/recitation tasks, and streamlining supervisor reviews.
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Features
+
+- 📖 **Study & Quran Circles**: Create, join, and manage reading and recitation circles with unique join codes.
+- 📋 **Task Management**: Assign daily reading or recitation tasks, track progress by passages, and submit evidence.
+- ✅ **Supervisor Review Queue**: Review pending join requests and task submissions with instant approval/rejection flows.
+- 🌙 **Adaptive Design & Custom Typography**: Fully supports both Dark and Light modes with custom Arabic typography (**Amiri** for headers and **Cairo** for UI text).
+- 🔥 **Streak Tracking**: Keep students motivated with daily streak counters and achievement badges.
+
+---
+
+## Tech Stack
+
+- **Cross-Platform UI**: Compose Multiplatform (Android & iOS)
+- **Architecture**: Clean Architecture / MVI (Model-View-Intent) pattern with shared UseCases and ViewModels
+- **Dependency Injection**: Koin
+- **Concurrency**: Kotlin Coroutines & Flow
+- **Design System**: Material 3 with customized Islamic/Quranic theme palette
+
+---
+
+## Project Structure
+
+```text
+StudyCircle/
+├── androidApp/          # Android application entry point & UI implementations
+├── iosApp/              # iOS application entry point (SwiftUI / MainViewController)
+├── shared/              # Kotlin Multiplatform shared module (Domain, Data, MVI, UseCases)
+└── backend/             # Companion backend services
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Android Studio (Koala or newer recommended)
+- Xcode (for running the iOS app on macOS)
+- JDK 17+
+
+### Building & Running
+
+#### Android
+Open the project in Android Studio and run the `:androidApp` configuration, or build via terminal:
+```bash
+./gradlew :androidApp:assembleDebug
+```
+
+#### iOS
+Open the `iosApp` directory in Xcode:
+```bash
+open iosApp/iosApp.xcodeproj
+```
+Or run the shared iOS tests:
+```bash
+./gradlew :shared:iosSimulatorArm64Test
+```
+
+---
+
+## License
+
+This project is open-source and available under the MIT License.

@@ -17,3 +17,5 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+/.artifacts/7aa2d01c-3565-4389-b61e-1940db23e0dc/implementation_plan.artifact.md
+/.artifacts/7aa2d01c-3565-4389-b61e-1940db23e0dc/walkthrough.artifact.md
